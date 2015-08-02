@@ -8,40 +8,43 @@
 #include "cmdline.h"
 #include "CaptionDef.h"
 
+#include <iostream>  /*pf_append*/
+
 static void usage(int argc)
 {
   static const TCHAR *help[] = {
-      _T("Usage:  Caption2Ass_PCR.exe [Options] source.ts [target filename]"),
-      _T(""),
-      _T("Options:"),
-      _T("    -format <string>            Specify output format. {srt|ass|taw|dual}"),
-      _T("                                    Default: ass"),
-      _T("    -delay <integer>            Sepcify delay time. [mili-sec]"),
-      _T("    -PMT_PID <hex>              Specify PID value."),
-      _T("    -detect_length <integer>    Specify upper limit value of packet counting"),
-      _T("                                 for detecting caption data. [10k]"),
-      _T("                                    Default: 300"),
-      _T("    -log                        Make log-file."),
-      _T("    -keepinterval               Keep the interval of the output timestamp"),
-      _T("                                 upon detection of packet loss."),
-      _T("  [srt]"),
-      _T("    -srtornament                Set ornament to srt-file."),
-      _T("  [ass]"),
-      _T("    -asstype <string>           Sepcify type name of ass setting."),
-      _T("    -hlc <string>               Sepcify HLC control type. {kigou|box|draw}"),
-      _T("                                    Default: kigou"),
-      _T("    -norubi                     Does not output the Rubi to ass-file."),
-      _T(""),
-      _T("Example:"),
-      _T("    Caption2Ass_PCR.exe -format dual \"source.ts\""),
-      _T("    Caption2Ass_PCR.exe -format ass -asstype Default43 -hlc kigou \"source.ts\""),
-      _T("    Caption2Ass_PCR.exe -delay 500 -PMT_PID 1f2 -detect_length 400 \"source.ts\""),
-      NULL
+    _T("Usage:  Caption2Ass_PCR.exe [Options] source.ts [target filename]"),
+    _T(""),
+    _T("Options:"),
+    _T("    -format <string>            Specify output format. {srt|ass|taw|dual}"),
+    _T("                                    Default: ass"),
+    _T("    -delay <integer>            Sepcify delay time. [mili-sec]"),
+    _T("    -PMT_PID <hex>              Specify PID value."),
+    _T("    -detect_length <integer>    Specify upper limit value of packet counting"),
+    _T("                                 for detecting caption data. [10k]"),
+    _T("                                    Default: 300"),
+    _T("    -log                        Make log-file."),
+    _T("    -keepinterval               Keep the interval of the output timestamp"),
+    _T("                                 upon detection of packet loss."),
+    _T("  [srt]"),
+    _T("    -srtornament                Set ornament to srt-file."),
+    _T("  [ass]"),
+    _T("    -asstype <string>           Sepcify type name of ass setting."),
+    _T("    -hlc <string>               Sepcify HLC control type. {kigou|box|draw}"),
+    _T("                                    Default: kigou"),
+    _T("    -norubi                     Does not output the Rubi to ass-file."),
+    _T(""),
+    _T("Example:"),
+    _T("    Caption2Ass_PCR.exe -format dual \"source.ts\""),
+    _T("    Caption2Ass_PCR.exe -format ass -asstype Default43 -hlc kigou \"source.ts\""),
+    _T("    Caption2Ass_PCR.exe -delay 500 -PMT_PID 1f2 -detect_length 400 \"source.ts\""),
+    NULL
   };
 
   if (argc < 2) {
     for (int i = 0; help[i]; i++)
-      _ftprintf_s(stdout, _T("%s\n"), help[i]);
+      _ftprintf_s(stderr, _T("%s\n"), help[i]);    /*pf_append*/
+    //_ftprintf_s(stdout, _T("%s\n"), help[i]);
   }
   else {
     for (int i = 0; help[i]; i++)
@@ -63,7 +66,9 @@ extern int ParseCmd(int argc, TCHAR **argv, CCaption2AssParameter *param)
   size_t string_length = param->string_length;
 
   // Set up the default value.
-  cp->detectLength = 300 * 10000;
+  cp->detectLength = 300 * 10000;      //about 3-5 min
+  cp->Mode_Stdin = false;              //pf_append
+  cp->ReadSpeedLimit_MiBsec = 0;       //pf_append
   _tcscpy_s(cp->ass_type, string_length, _T("Default"));
 
   // Parse args.
@@ -90,6 +95,24 @@ extern int ParseCmd(int argc, TCHAR **argv, CCaption2AssParameter *param)
       else
         goto ERROR_PARAM;
     }
+
+    //==================================================
+    /*pf_append*/
+    else if (_tcsicmp(argv[i], _T("-pipe")) == 0){
+      cp->Mode_Stdin = true;
+      _tcscpy_s(cp->FileName, string_length, _T("pipe"));  //ダミーのファイル名を入れる。
+    }
+    else if (_tcsicmp(argv[i], _T("-limit")) == 0){
+      i++;
+      if (_stscanf_s(argv[i], _T("%lf"), &(cp->ReadSpeedLimit_MiBsec)) <= 0)
+        goto ERROR_PARAM;
+    }
+    else if (_tcsicmp(argv[i], _T("-NonCapTag")) == 0){
+      cp->NonCaptionTag = true;
+    }
+    /*pf_end_append*/
+    //==================================================
+
     else if (_tcsicmp(argv[i], _T("-i")) == 0) {
       i++;
       if (i > argc)
@@ -157,6 +180,7 @@ extern int ParseCmd(int argc, TCHAR **argv, CCaption2AssParameter *param)
 extern void _tMyPrintf(IN  LPCTSTR tracemsg, ...)
 {
   TCHAR buf[MAX_PATH + 2048] = { 0 };
+
   HRESULT ret;
 
   __try {
@@ -169,10 +193,11 @@ extern void _tMyPrintf(IN  LPCTSTR tracemsg, ...)
       tracemsg,
       ptr
       );
-
     if (ret == S_OK) {
-      DWORD ws;
-      WriteConsole(GetStdHandle(STD_OUTPUT_HANDLE), buf, (DWORD)_tcslen(buf), &ws, NULL);
+      //DWORD ws;                                                                            /*pf_off*/
+      //WriteConsole(GetStdHandle(STD_OUTPUT_HANDLE), buf, (DWORD)_tcslen(buf), &ws, NULL);  /*pf_off*/
+      //STD_OUTPUT_HANDLからcerrに変更
+      std::cerr << buf << std::flush;;  /*pf_append*/
     }
   }
   __finally {

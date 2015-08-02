@@ -191,8 +191,10 @@ EXIT:
       SAFE_DELETE_ARRAY(argv[i]);
     SAFE_DELETE_ARRAY(argv);
   }
+  if (fp != NULL)            /*pf_append*/
+    fclose(fp);
+  //fclose(fp);              /*pf_off*/
 
-  fclose(fp);
   SAFE_DELETE_ARRAY(ini_file);
   SAFE_DELETE_ARRAY(tmp_buff);
 

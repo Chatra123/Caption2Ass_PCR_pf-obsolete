@@ -25,6 +25,9 @@ typedef struct {
   TCHAR      *FileName;
   TCHAR      *TargetFileName;
   TCHAR      *LogFileName;
+  BOOL        Mode_Stdin;              /*pf_append*/
+  double      ReadSpeedLimit_MiBsec;   /*pf_append*/
+  BOOL        NonCaptionTag;           /*pf_append*/
 } cli_parameter_t;
 
 typedef struct {
@@ -70,9 +73,9 @@ public:
 
   int Allocate(size_t string_length = 0);
 
-  pid_information_t *get_pid_information(void) { return &pid_information; }
-  cli_parameter_t *get_cli_parameter(void) { return &cli_parameter; }
-  ass_setting_t *get_ass_setting(void) { return &ass_setting; }
+  pid_information_t *get_pid_information(void){ return &pid_information; }
+  cli_parameter_t *get_cli_parameter(void){ return &cli_parameter; }
+  ass_setting_t *get_ass_setting(void){ return &ass_setting; }
 };
 
 #endif // __CAPTION2ASS_PARAMETER_H__

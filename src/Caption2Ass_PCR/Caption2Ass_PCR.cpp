@@ -6,6 +6,17 @@
 #include <shlwapi.h>
 #include <vector>
 
+/*pf_append*/
+#include <io.h>
+#include <fcntl.h>
+#include <iostream>
+#include <time.h>
+#include <chrono>
+#include <thread>
+using namespace std::chrono;
+using namespace std;
+/*pf_end_append*/
+
 #include "CommRoutine.h"
 #include "CaptionDllUtil.h"
 #include "cmdline.h"
@@ -157,14 +168,16 @@ class IOutputHandler
 {
 public:
   int             active;
+  DWORD           index;                                   /*pf_append*/
 
 protected:
   format_type     format;
   TCHAR          *name;
   FILE           *fp;
-  DWORD           index;
+  //DWORD         index;                                   /*publicに移動*/
   size_t          string_length;
   IAppHandler    *app;
+  time_t timeLastFlush;                                    /*pf_append*/
 
 protected:
   void initialize(format_type format = FORMAT_INVALID, IAppHandler *app = NULL)
@@ -176,6 +189,7 @@ protected:
     this->index = 0;
     this->string_length = MAX_PATH;
     this->app = app;
+    this->timeLastFlush = time(NULL);                      /*pf_append*/
   }
   void release(void)
   {
@@ -193,10 +207,22 @@ protected:
       return -2;
     if (_tcsicmp(this->name, _T("")) == 0)
       return 1;
-    if (_tfopen_s(&(this->fp), this->name, _T("wb")) || !(this->fp)) {
+
+    /*pf_append*/
+    this->fp = _tfsopen(this->name, _T("wb"), _SH_DENYWR); //共有設定  読込みを許可
+
+    if (this->fp == NULL) {
       _tMyPrintf(_T("Open %s File: %s failed\r\n"), file_type, this->name);
       return -1;
     }
+    /*pf_end_append*/
+    /*pf_off*/
+    //if (_tfopen_s(&(this->fp), this->name, _T("wb")) || !(this->fp)) {
+    //  _tMyPrintf(_T("Open %s File: %s failed\r\n"), file_type, this->name);
+    //  return -1;
+    //}
+    /*pf_end_off*/
+
     this->index = 1;
     this->active = 1;
     return 0;
@@ -206,8 +232,16 @@ protected:
     if (this->fp) {
       fclose(this->fp);
       if (removed) {
-        Sleep(1000);
-        remove(this->name);
+        //Sleep(1000);                                     /*pf_off*/
+        //remove(this->name);                              /*pf_off*/
+
+        /*pf_append*/
+        /*他のプロセスから読み込まれている間は削除できない。数回繰り返す。*/
+        for (size_t i = 0; i < 3; i++)
+        {
+          Sleep(100);
+          if (remove(this->name) == 0) break;
+        }
       }
       this->fp = NULL;
     }
@@ -666,10 +700,10 @@ void CAssHandler::Dump(CAPTION_LIST& capList, DWORD endTime)
     }
     if ((*it)->outCharSizeMode == STR_SMALL)
       fprintf(fp, "Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Rubi,,0000,0000,0000,,{\\pos(%d,%d)",
-        sH, sM, sS, sMs, eH, eM, eS, eMs, (*it)->outPosX, (*it)->outPosY);
+      sH, sM, sS, sMs, eH, eM, eS, eMs, (*it)->outPosX, (*it)->outPosY);
     else
       fprintf(fp, "Dialogue: 0,%01d:%02d:%02d.%02d,%01d:%02d:%02d.%02d,Default,,0000,0000,0000,,{\\pos(%d,%d)",
-        sH, sM, sS, sMs, eH, eM, eS, eMs, (*it)->outPosX, (*it)->outPosY);
+      sH, sM, sS, sMs, eH, eM, eS, eMs, (*it)->outPosX, (*it)->outPosY);
 
     if ((*it2)->outCharColor.ucR != 0xff || (*it2)->outCharColor.ucG != 0xff || (*it2)->outCharColor.ucB != 0xff)
       fprintf(fp, "\\c&H%06x&", (*it2)->outCharColor);
@@ -794,7 +828,6 @@ do {                            \
     }
     if ((*it)->outHLC != 0)
       fprintf(fp, "[");
-
     // Output strings.
     while (1) {
       fwrite((*it2)->str.c_str(), (*it2)->str.size(), 1, fp);
@@ -816,6 +849,15 @@ do {                            \
       ORNAMENT_END();
     }
     fprintf(fp, "\r\n");
+
+    /*pf_append*/
+    // flush at least every 2 sec
+    if (2 < time(NULL) - timeLastFlush)
+    {
+      fflush(fp);
+      timeLastFlush = time(NULL);
+    }
+    /*pf_end_append*/
   }
 
   if (capList.size() > 0) {
@@ -990,7 +1032,12 @@ static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LI
         clear_caption_list(capList);
         continue;
       }
-      app.bCreateOutput = TRUE;
+
+      //capListのサイズを確認するようにした。
+      //空のcapListに反応して、cp->detectLengthの処理中断ができないことがあった。
+      if (0 < capList.size())  app.bCreateOutput = TRUE;   /*pf_append*/
+      //app.bCreateOutput = TRUE;                          /*pf_off*/
+
       DWORD endTime = (DWORD)((PTS + it->dwWaitTime) - app.startPCR);
       for (int i = 0; handle[i]; i++)
         if (handle[i]->active)
@@ -1015,7 +1062,7 @@ static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LI
           int x;
           int y;
         } resolution[4] = {
-            {1920, 1080}, { 720,  480}, {1280,  720}, { 960,  540}
+          { 1920, 1080 }, { 720, 480 }, { 1280, 720 }, { 960, 540 }
         };
         int index = (wLastSWFMode == 5) ? 0
           : (wLastSWFMode == 9) ? 1
@@ -1201,12 +1248,98 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
   BYTE pbPacket[188 * 2 + 4] = { 0 };
   DWORD packetCount = 0;
 
+  //===========================================================
+  /*pf_append*/
+  const int TSPacketSize = 188;
+  bool afterResync = false;                                          //Resyncの直後？Resync時に同期バイト'G'はpbPacketは確認済
+  auto tickBeginTime = system_clock::now();                          //速度制限    計測開始時間
+  double tickReadSize = 0;                                           //速度制限    200ms間の読込み量
+  double limit_Bsec = cp->ReadSpeedLimit_MiBsec * 1024 * 1024;       //速度制限    最大読込み速度
+  time_t timeRequestData = NULL;                                     //fread()した時間。強制終了用スレッドによる未接続時間の監視に使用
+
+  //強制終了用スレッド
+  //標準入力から一定時間データがこなければプロセスを強制終了させる
+  //一度データを確認できればスレッド終了
+  std::thread threadSelfKill;
+  bool RequestAbort_Selfkiller = false;
+
+  if (cp->Mode_Stdin)
+  {
+    threadSelfKill = std::thread([](time_t *timeRequestData, bool *RequestAbort_Selfkiller, ILogHandler *log)
+    {
+      while (true)
+      {
+        this_thread::sleep_for(chrono::milliseconds(5000));
+        if (*RequestAbort_Selfkiller == true) break;               //スレッド正常終了
+        else if (*timeRequestData == NULL) continue;
+
+        if (300 < time(NULL) - *timeRequestData)           //300秒で強制終了
+        {
+          if (log->active)
+          {
+            log->print("error:  Not detect data for 120sec from stdin.\r\n");
+            log->Close();
+          }
+          ExitProcess(1);                                  //プロセス強制終了
+          break;
+        }
+      }
+    }, &timeRequestData, &RequestAbort_Selfkiller, log);
+  }
+
+  //
   // Main loop
-  while (fread(pbPacket, 188, 1, app.fpInputTs) == 1) {
+  //
+  //while (fread(pbPacket, 188, 1, app.fpInputTs) == 1) {
+  while (true){
+
+    //データ読込
+    int readNum;
+    timeRequestData = time(NULL);
+    if (!afterResync)
+    {
+      //通常
+      readNum = fread(pbPacket, TSPacketSize, 1, app.fpInputTs);
+    }
+    else
+    {
+      //Resync直後
+      //同期バイト'G'は既に確認済み。残りの187byteを読み込む。
+      //再同期処理ではストリーム位置を戻せないのでResync直後なら処理を分ける。
+      pbPacket[0] = 'G';
+      readNum = fread(&pbPacket[1], TSPacketSize - 1, 1, app.fpInputTs);
+      afterResync = false;
+    }
+
+    RequestAbort_Selfkiller = true;    //接続確認、強制終了用スレッド停止
+    if (readNum == 0) break;           //EOF or close pipe
+
+    //速度制限
+    if (cp->Mode_Stdin == false && 0 < limit_Bsec)
+    {
+      tickReadSize += readNum * TSPacketSize;                                  //単位時間の読込み量
+      auto tickDuration = system_clock::now() - tickBeginTime;                 //経過時間
+      auto duration_ms = duration_cast<chrono::milliseconds>(tickDuration).count();
+
+      //単位時間ごとにカウンタリセット
+      if (200 <= duration_ms)
+      {
+        tickBeginTime = system_clock::now();
+        tickReadSize = 0;
+      }
+
+      //読込量が制限をこえたらsleep_for
+      if (limit_Bsec * (200.0 / 1000.0) < tickReadSize)
+        this_thread::sleep_for(chrono::milliseconds(200 - duration_ms));
+    }
+
+    /*pf_end_append*/
+    //===========================================================
+
     packetCount++;
     if (cp->detectLength > 0) {
       if (packetCount > cp->detectLength && !(app.bCreateOutput)) {
-        _tMyPrintf(_T("Programe has deteced %dw packets, but can't find caption. Now it exits.\r\n"), packetCount / 10000);
+        _tMyPrintf(_T("Programme has deteced %dw packets, but can't find caption. Now it exits.\r\n"), packetCount / 10000);
         break;
       }
     }
@@ -1232,15 +1365,35 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
     Packet_Header packet;
     parse_Packet_Header(&packet, &pbPacket[0]);
 
-    if (packet.Sync != 'G') {
-      if (!resync(pbPacket, app.fpInputTs)) {
+    /*pf_append*/
+    if (packet.Sync != 'G')
+    {
+      if (!resync2(pbPacket, app.fpInputTs, TSPacketSize))
+      {
+        _tMyPrintf(_T("Fail to resync.\r\n"));
         _tMyPrintf(_T("Invalid TS File.\r\n"));
         Sleep(2000);
         result = C2A_FAILURE;
         goto EXIT;
       }
-      continue;
+
+      //再同期後のパケットはpbPacketに読込み済、パースして続行
+      afterResync = true;
+      Packet_Header packet;
+      parse_Packet_Header(&packet, &pbPacket[0]);
     }
+    /*pf_end_append*/
+    /*pf_off*/
+    //if (packet.Sync != 'G') {
+    //    if (!resync(pbPacket, app.fpInputTs)) {
+    //        _tMyPrintf(_T("Invalid TS File.\r\n"));
+    //        Sleep(2000);
+    //        result = C2A_FAILURE;
+    //        goto EXIT;
+    //    }
+    //    continue;
+    //}
+    /*pf_end_off*/
 
     if (packet.TsErr)
       continue;
@@ -1257,11 +1410,11 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
     if (pi->PMTPid != 0 && packet.PID == pi->PMTPid) {
       if (pbPacket[5] != 0x02 || (pbPacket[6] & 0xf0) != 0xb0)
         /*--------------------------------------------------
-         * pbPacket[5]  (8)  table_id
-         * pbPacket[6]  (1)  section_syntax_indicator
-         *              (1)  '0'
-         *              (2)  reserved '11'
-         *------------------------------------------------*/
+        * pbPacket[5]  (8)  table_id
+        * pbPacket[6]  (1)  section_syntax_indicator
+        *              (1)  '0'
+        *              (2)  reserved '11'
+        *------------------------------------------------*/
         continue;   // next packet
 
       parse_PMT(&pbPacket[0], &(pi->PCRPid), &(pi->CaptionPid));
@@ -1283,12 +1436,12 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
       if (!(bAF & 0x10))
         continue; // next packet
 
-    // Get PCR.
-    /*     90kHz           27MHz
-     *  +--------+-------+-------+
-     *  | 33 bits| 6 bits| 9 bits|
-     *  +--------+-------+-------+
-     */
+      // Get PCR.
+      /*     90kHz           27MHz
+      *  +--------+-------+-------+
+      *  | 33 bits| 6 bits| 9 bits|
+      *  +--------+-------+-------+
+      */
       long long PCR, PCR_base, PCR_ext;
       PCR_base = ((long long)pbPacket[6] << 25)
         | ((long long)pbPacket[7] << 17)
@@ -1302,7 +1455,7 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
       if (log->active)
         if (app.lastPTS == TIMESTAMP_INVALID_VALUE)
           log->print("PCR, startPCR, lastPCR, basePCR : %11lld, %11lld, %11lld, %11lld\r\n",
-            PCR, app.startPCR, app.lastPCR, app.basePCR);
+          PCR, app.startPCR, app.lastPCR, app.basePCR);
 
       // Check startPCR.
       if (app.startPCR == TIMESTAMP_INVALID_VALUE) {
@@ -1348,11 +1501,11 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
         //    continue;
 #endif
 
-                // Get Caption PTS.
+        // Get Caption PTS.
         PTS = GetPTS(pbPacket);
         if (log->active)
           log->print("PTS, lastPTS, basePTS, startPCR : %11lld, %11lld, %11lld, %11lld    ",
-            PTS, app.lastPTS, app.basePTS, app.startPCR);
+          PTS, app.lastPTS, app.basePTS, app.startPCR);
 
         // Check skip.
         if (PTS == TIMESTAMP_INVALID_VALUE || app.startPCR == TIMESTAMP_INVALID_VALUE) {
@@ -1371,11 +1524,11 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
 
         // Update lastPTS.
         app.lastPTS = PTS;
-      }
+    }
       else {
         if (log->active)
           log->print("PTS, lastPTS, basePTS, startPCR : %11lld, %11lld, %11lld, %11lld    ",
-            PTS, app.lastPTS, app.basePTS, app.startPCR);
+          PTS, app.lastPTS, app.basePTS, app.startPCR);
 
         // Check skip.
         if (app.lastPTS == TIMESTAMP_INVALID_VALUE || app.startPCR == TIMESTAMP_INVALID_VALUE) {
@@ -1398,7 +1551,7 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
         _tMyPrintf(_T("Caption Time: %01d:%02d:%02d.%03d\r\n"), sH, sM, sS, sMs);
       if (log->active)
         log->print("%s Caption Time: %01d:%02d:%02d.%03d\r\n",
-          ((packet.PayloadStartFlag) ? "1st" : "2nd"), sH, sM, sS, sMs);
+        ((packet.PayloadStartFlag) ? "1st" : "2nd"), sH, sM, sS, sMs);
 
       // Parse caption.
       int ret = capUtil.AddTSPacket(pbPacket);
@@ -1411,15 +1564,26 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
           result = C2A_ERR_MEMORY;
           goto EXIT;
         }
-    }
   }
+}
 
 EXIT:
+
+  /*pf_append*/
+  //自己終了用スレッド join確認
+  if (cp->Mode_Stdin){
+    RequestAbort_Selfkiller = true;
+    threadSelfKill.join();
+  }
+
   return result;
 }
 
+//
 int _tmain(int argc, _TCHAR *argv[])
 {
+  //DebugBreak();
+
   int             result = C2A_SUCCESS;
   CCaptionDllUtil capUtil;
   CAPTION_LIST    capList;
@@ -1457,29 +1621,59 @@ int _tmain(int argc, _TCHAR *argv[])
   // Initialize the output filename.
   setup_output_filename(app);
   static const TCHAR *format_name[FORMAT_MAX] = {
-      _T(""),
-      _T("srt"),
-      _T("ass"),
-      _T("srt for TAW"),
-      _T("ass & srt")
+    _T(""),
+    _T("srt"),
+    _T("ass"),
+    _T("srt for TAW"),
+    _T("ass & srt")
   };
   _tMyPrintf(_T("[Source] %s\r\n"), cp->FileName);
   _tMyPrintf(_T("[Target] %s\r\n"), cp->TargetFileName);
   _tMyPrintf(_T("[Format] %s\r\n"), format_name[cp->format]);
 
+  /*pf_append*/
+  //Open File
+  if (cp->Mode_Stdin)
+  {
+    //標準入力
+    app.fpInputTs = stdin;
+    _setmode(_fileno(stdin), _O_BINARY);
+  }
+  else
+  {
+    //ファイル
+    if (_tfopen_s(&(app.fpInputTs), cp->FileName, _T("rb"))
+      || !(app.fpInputTs))
+    {
+      _tMyPrintf(_T("Open TS File: %s failed\r\n"), cp->FileName);
+      result = C2A_ERR_PARAM;
+      goto EXIT;
+    }
+
+    // Check TS File.
+    if (!FindStartOffset(app.fpInputTs)) {
+      _tMyPrintf(_T("Invalid TS File.\r\n"));
+      Sleep(2000);
+      result = C2A_FAILURE;
+      goto EXIT;
+    }
+  }
+  /*pf_end_append*/
+  /*pf_off*/
   // Open TS File.
-  if (_tfopen_s(&(app.fpInputTs), cp->FileName, _T("rb")) || !(app.fpInputTs)) {
-    _tMyPrintf(_T("Open TS File: %s failed\r\n"), cp->FileName);
-    result = C2A_ERR_PARAM;
-    goto EXIT;
-  }
-  // Check TS File.
-  if (!FindStartOffset(app.fpInputTs)) {
-    _tMyPrintf(_T("Invalid TS File.\r\n"));
-    Sleep(2000);
-    result = C2A_FAILURE;
-    goto EXIT;
-  }
+  //if (_tfopen_s(&(app.fpInputTs), cp->FileName, _T("rb")) || !(app.fpInputTs)) {
+  //  _tMyPrintf(_T("Open TS File: %s failed\r\n"), cp->FileName);
+  //  result = C2A_ERR_PARAM;
+  //  goto EXIT;
+  //}
+  //// Check TS File.
+  //if (!FindStartOffset(app.fpInputTs)) {
+  //  _tMyPrintf(_T("Invalid TS File.\r\n"));
+  //  Sleep(2000);
+  //  result = C2A_FAILURE;
+  //  goto EXIT;
+  //}
+  /*pf_end_off*/
 
   // Open ASS/SRT/Log File.
   if (open_output_files(app)) {
@@ -1498,6 +1692,36 @@ int _tmain(int argc, _TCHAR *argv[])
 
   // Main loop
   result = main_loop(app, capUtil, capList);
+
+  /*pf_append*/
+  //NonCaptionTag作成
+  if (cp->NonCaptionTag)
+  {
+    //書込みがあったか？
+    //indexで判断、indexは初期化時に1。字幕を検出するたびに+1される。
+    int sumIndex = 0;
+    ICaptionHandler** caphandle = app.caption_handle;
+
+    for (int i = 0; caphandle[i]; i++)
+    {
+      if (caphandle[i]->index <= 1)
+        continue;
+      else
+        sumIndex += caphandle[i]->index - 1;
+    }
+
+    if (sumIndex == 0)
+    {
+      //NonCaptionTag作成
+      FILE *fp;
+      TCHAR nontagPath[1024] = _T("");
+      _tcscat_s(nontagPath, 1024, cp->TargetFileName);
+      _tcscat_s(nontagPath, 1024, _T(".noncap"));
+      _tfopen_s(&fp, nontagPath, _T("w"));
+      fclose(fp);
+    }
+  }
+  /*pf_end_append*/
 
 EXIT:
   clear_caption_list(capList);
