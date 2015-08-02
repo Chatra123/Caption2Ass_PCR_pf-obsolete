@@ -100,71 +100,71 @@ static const char HalfKanaTable[][3] = {
 #ifdef _DEBUG
 extern VOID DbgString(IN  LPCTSTR tracemsg, ...)
 {
-    TCHAR buf[MAX_DEBUG_OUTPUT_LENGTH] = { 0 };
-    HRESULT ret;
+  TCHAR buf[MAX_DEBUG_OUTPUT_LENGTH] = { 0 };
+  HRESULT ret;
 
-    __try {
-        va_list ptr;
-        va_start(ptr, tracemsg);
+  __try {
+    va_list ptr;
+    va_start(ptr, tracemsg);
 
-        ret = StringCchVPrintf(
-            buf,
-            2048,
-            tracemsg,
-            ptr
-            );
+    ret = StringCchVPrintf(
+      buf,
+      2048,
+      tracemsg,
+      ptr
+      );
 
-        if (ret == S_OK)
-            OutputDebugString(buf);
-    }
-    __finally {
-    }
+    if (ret == S_OK)
+      OutputDebugString(buf);
+  }
+  __finally {
+  }
 
-    return;
+  return;
 }
 #endif
 
 extern std::string GetHalfChar(std::string key)
 {
-//  std::string ret;
-    CHAR ret[STRING_BUFFER_SIZE] = { 0 };
-    BOOL bMatch = FALSE;
+  //  std::string ret;
+  CHAR ret[STRING_BUFFER_SIZE] = { 0 };
+  BOOL bMatch = FALSE;
 
-    // マッチしない文字は、そのまま使用
-    const char *_p = key.c_str();
-//  const char *_pret = ret.c_str();
-    char *p = (char *)key.c_str();
-//  char *pret = (char *)ret.c_str();
+  // マッチしない文字は、そのまま使用
+  const char *_p = key.c_str();
+  //  const char *_pret = ret.c_str();
+  char *p = (char *)key.c_str();
+  //  char *pret = (char *)ret.c_str();
 
-    while (p < _p + key.size()) {
-        for (int i = 0; i < sizeof(HiraTable) / sizeof(HiraTable[0]) && p < _p + key.size(); i++) {
-            bMatch = FALSE;
-            if (memcmp(p, HiraTable[i], 2) == 0) {
-//              ret += HalfHiraTable[i];
-                strcat_s( ret, STRING_BUFFER_SIZE, HalfHiraTable[i] );
-                p += 2;
-                bMatch = TRUE;
-                i = -1;
-            }
-        }
-
-        for (int i = 0; i < sizeof(KanaTable) / sizeof(KanaTable[0]) && p < _p + key.size(); i++) {
-            bMatch = FALSE;
-            if (memcmp(p, KanaTable[i], 2) == 0) {
-//              ret += HalfKanaTable[i];
-                strcat_s(ret, STRING_BUFFER_SIZE, HalfKanaTable[i]);
-                p += 2;
-                bMatch = TRUE;
-                i = -1;
-            }
-        }
-
-        if (p < _p + key.size()) {
-//          ret += strndup(p, 2);
-            strncat_s(ret, STRING_BUFFER_SIZE, p, 2);
-            p += 2;
-        }
+  while (p < _p + key.size()) {
+    for (int i = 0; i < sizeof(HiraTable) / sizeof(HiraTable[0]) && p < _p + key.size(); i++) {
+      bMatch = FALSE;
+      if (memcmp(p, HiraTable[i], 2) == 0) {
+        //              ret += HalfHiraTable[i];
+        strcat_s(ret, STRING_BUFFER_SIZE, HalfHiraTable[i]);
+        p += 2;
+        bMatch = TRUE;
+        i = -1;
+      }
     }
 
-    return ret;
+    for (int i = 0; i < sizeof(KanaTable) / sizeof(KanaTable[0]) && p < _p + key.size(); i++) {
+      bMatch = FALSE;
+      if (memcmp(p, KanaTable[i], 2) == 0) {
+        //              ret += HalfKanaTable[i];
+        strcat_s(ret, STRING_BUFFER_SIZE, HalfKanaTable[i]);
+        p += 2;
+        bMatch = TRUE;
+        i = -1;
+      }
+    }
+
+    if (p < _p + key.size()) {
+      //          ret += strndup(p, 2);
+      strncat_s(ret, STRING_BUFFER_SIZE, p, 2);
+      p += 2;
+    }
+  }
+
+  return ret;
 }

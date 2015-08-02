@@ -7,36 +7,34 @@
 #include <richedit.h>
 #include "resource.h"
 
-
-
 //
 // Version Information resources
 //
 LANGUAGE LANG_JAPANESE, SUBLANG_JAPANESE_JAPAN
 VS_VERSION_INFO VERSIONINFO
-    FILEVERSION     0,4,0,3
-    PRODUCTVERSION  0,4,0,3
-    FILEOS          VOS__WINDOWS32
-    FILETYPE        VFT_DLL
-    FILESUBTYPE     VFT2_UNKNOWN
-    FILEFLAGSMASK   0x00000017
-    FILEFLAGS       0x00000000
+FILEVERSION     0, 4, 0, 3
+PRODUCTVERSION  0, 4, 0, 3
+FILEOS          VOS__WINDOWS32
+FILETYPE        VFT_DLL
+FILESUBTYPE     VFT2_UNKNOWN
+FILEFLAGSMASK   0x00000017
+FILEFLAGS       0x00000000
 {
-    BLOCK "StringFileInfo"
+  BLOCK "StringFileInfo"
+  {
+    BLOCK "041104B0"
     {
-        BLOCK "041104B0"
-        {
-            VALUE "FileDescription", "Caption"
-            VALUE "FileVersion", "0, 4, 0, 3"
-            VALUE "InternalName", "Caption.dll"
-            VALUE "LegalCopyright", "mark10als ‰ü‘¢”Å 2011-2012"
-            VALUE "OriginalFilename", "Caption.dll"
-            VALUE "ProductName", "Caption"
-            VALUE "ProductVersion", "0, 4, 0, 3"
-        }
+      VALUE "FileDescription", "Caption"
+        VALUE "FileVersion", "0, 4, 0, 3"
+        VALUE "InternalName", "Caption.dll"
+        VALUE "LegalCopyright", "mark10als ‰ü‘¢”Å 2011-2012"
+        VALUE "OriginalFilename", "Caption.dll"
+        VALUE "ProductName", "Caption"
+        VALUE "ProductVersion", "0, 4, 0, 3"
     }
-    BLOCK "VarFileInfo"
-    {
-        VALUE "Translation", 0x0411, 0x04B0
-    }
+  }
+  BLOCK "VarFileInfo"
+  {
+    VALUE "Translation", 0x0411, 0x04B0
+  }
 }
