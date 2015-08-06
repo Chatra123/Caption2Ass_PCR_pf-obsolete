@@ -851,8 +851,8 @@ do {                            \
     fprintf(fp, "\r\n");
 
     /*pf_append*/
-    // flush at least every 2 sec
-    if (2 < time(NULL) - timeLastFlush)
+    // flush at least every 4 sec
+    if (4 < time(NULL) - timeLastFlush)
     {
       fflush(fp);
       timeLastFlush = time(NULL);
