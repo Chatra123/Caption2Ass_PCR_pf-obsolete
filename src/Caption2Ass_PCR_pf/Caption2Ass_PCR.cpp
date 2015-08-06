@@ -1305,7 +1305,7 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
     {
       //Resync直後
       //同期バイト'G'は既に確認済み。残りの187byteを読み込む。
-      //再同期処理ではストリーム位置を戻せないのでResync直後なら処理を分ける。
+      //ストリーム位置を戻せないのでResync直後は処理を分ける。
       pbPacket[0] = 'G';
       readNum = fread(&pbPacket[1], TSPacketSize - 1, 1, app.fpInputTs);
       afterResync = false;
