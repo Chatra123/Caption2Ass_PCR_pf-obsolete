@@ -49,7 +49,7 @@ dualを指定すると srt, assを出力します。
 
 
 その他の引数は  
-"Caption2Ass_PCR_pf\src\readme history\Caption2Ass_PCR.exe の Readme.txt"  
+"Caption2Ass_PCR_pf\readme history\Caption2Ass_PCR.exe の Readme.txt"  
 に記載されています。
 
 
