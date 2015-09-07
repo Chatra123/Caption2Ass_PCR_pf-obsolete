@@ -48,7 +48,7 @@ dualを指定すると srt, assを出力します。
 初期値は300  
 
 
-その他の引数は  
+その他の引数はソースコード内の   
 "Caption2Ass_PCR_pf\readme history\Caption2Ass_PCR.exe の Readme.txt"  
 に記載されています。
 
