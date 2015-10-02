@@ -27,8 +27,8 @@ Caption2Ass_PCR_pf.exe  -pipe  -o "C:\video.ts"  -format srt
 
 
     -NonCapTag
-tsファイルに字幕が含まれてない場合に空のファイルvideo.noncapを出力。
-Caption2Ass_PCR_pfの動作確認用です。
+tsファイルに字幕が含まれてない場合に空のファイルvideo.noncapを出力
+
 
 
 
@@ -40,6 +40,7 @@ Caption2Ass_PCR_pfの動作確認用です。
     -format dual
 字幕ファイルの形式。  
 dualを指定すると srt, assを出力します。
+文字コード　UTF-8 bom
 
 
     -detect_length 300
