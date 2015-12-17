@@ -1,12 +1,18 @@
 ﻿
 ## Caption2Ass_PCR_pf
 
-tsファイルから字幕を抽出します。
-
+ＴＳファイルから字幕を抽出します。
 
 
 ------------------------------------------------------------------
 ### 使い方
+
+Run_Caption2Ass_PCR_pf.batにTSファイルをドロップ
+
+
+
+### 使い方　　コマンドライン
+
 ファイル  
 Caption2Ass_PCR_pf.exe  -i "C:\video.ts"  -o "C:\video.ts"  -format srt
 
@@ -18,6 +24,7 @@ Caption2Ass_PCR_pf.exe  -pipe  -o "C:\video.ts"  -format srt
 ------------------------------------------------------------------
 ### 追加引数
 
+    -p
     -pipe
 パイプからデータを受けとる
 
@@ -27,8 +34,7 @@ Caption2Ass_PCR_pf.exe  -pipe  -o "C:\video.ts"  -format srt
 
 
     -NonCapTag
-tsファイルに字幕が含まれてない場合に空のファイルvideo.noncapを出力
-
+tsファイルに字幕が含まれてない場合に空のファイル .noncapを出力
 
 
 
@@ -37,21 +43,28 @@ tsファイルに字幕が含まれてない場合に空のファイルvideo.non
 
     -format srt
     -format ass
-    -format dual
-字幕ファイルの形式。  
-dualを指定すると srt, assを出力します。
-文字コード　UTF-8 bom
+字幕ファイルの形式  
+文字コード　UTF-8 bom  
 
 
     -detect_length 300
-300×10000パケットを探索して字幕が見つからなければプロセスを終了します。  
-およそ３～５分間のデータ量に相当します。  
-初期値は300  
+300×10,000パケットを探索して字幕が見つからなければプロセスを終了します。  
+およそ３～５分間のデータ量に相当  
+-detect_lengthが無いときの初期値は300  
 
 
 その他の引数はソースコード内の   
 "Caption2Ass_PCR_pf\readme history\Caption2Ass_PCR.exe の Readme.txt"  
 に記載されています。
+
+
+------------------------------------------------------------------
+### Caption2Ass_PCRからの変更
+
+-o "C:\video.ts" と指定されたら　video.srtを出力していましたが、
+video.ts.srtを出力するように変更。  
+.tsを自動的に除去しないようにした。  
+video.srtを出力するには -o "C:\video"と指定してください。 
 
 
 ------------------------------------------------------------------

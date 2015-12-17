@@ -44,7 +44,7 @@ static void usage(int argc)
   if (argc < 2) {
     for (int i = 0; help[i]; i++)
       _ftprintf_s(stderr, _T("%s\n"), help[i]);    /*pf_append*/
-    //_ftprintf_s(stdout, _T("%s\n"), help[i]);
+    //_ftprintf_s(stdout, _T("%s\n"), help[i]);    /*pf_off*/
   }
   else {
     for (int i = 0; help[i]; i++)
@@ -98,6 +98,10 @@ extern int ParseCmd(int argc, TCHAR **argv, CCaption2AssParameter *param)
 
     //==================================================
     /*pf_append*/
+    else if (_tcsicmp(argv[i], _T("-p")) == 0){
+      cp->Mode_Stdin = true;
+      _tcscpy_s(cp->FileName, string_length, _T("pipe"));  //ダミーのファイル名を入れる。
+    }
     else if (_tcsicmp(argv[i], _T("-pipe")) == 0){
       cp->Mode_Stdin = true;
       _tcscpy_s(cp->FileName, string_length, _T("pipe"));  //ダミーのファイル名を入れる。
@@ -196,7 +200,8 @@ extern void _tMyPrintf(IN  LPCTSTR tracemsg, ...)
     if (ret == S_OK) {
       //DWORD ws;                                                                            /*pf_off*/
       //WriteConsole(GetStdHandle(STD_OUTPUT_HANDLE), buf, (DWORD)_tcslen(buf), &ws, NULL);  /*pf_off*/
-      //STD_OUTPUT_HANDLからcerrに変更
+
+      //STD_OUTPUT_HANDLからcerrに変更  /*pf_append*/
       std::cerr << buf << std::flush;;  /*pf_append*/
     }
   }
