@@ -1610,6 +1610,7 @@ int _tmain(int argc, _TCHAR *argv[])
     //•W€“ü—Í
     app.fpInputTs = stdin;
     _setmode(_fileno(stdin), _O_BINARY);
+    setvbuf(stdin, NULL, _IOFBF, 1024 * 256);
   }
   else
   {
