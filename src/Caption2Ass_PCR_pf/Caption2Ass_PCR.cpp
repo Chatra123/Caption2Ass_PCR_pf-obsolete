@@ -851,8 +851,8 @@ do {                            \
     fprintf(fp, "\r\n");
 
     /*pf_append*/
-    // flush at least every 4 sec
-    if (4 < time(NULL) - timeLastFlush)
+    // flush at least every 6 sec
+    if (6 < time(NULL) - timeLastFlush)
     {
       fflush(fp);
       timeLastFlush = time(NULL);
@@ -919,8 +919,11 @@ static void setup_output_filename(CAppHandler& app)
   if (_tcsicmp(cp->TargetFileName, _T("")) == 0)
     _tcscpy_s(cp->TargetFileName, string_length, cp->FileName);
   TCHAR *pExt = PathFindExtension(cp->TargetFileName);
-  if (pExt && _tcsicmp(pExt, _T(".ts")) == 0)
-    _tcscpy_s(pExt, 4, _T("\0"));
+
+  // pf_off    拡張子.tsがあってもそのままにする
+  //
+  //if (pExt && _tcsicmp(pExt, _T(".ts")) == 0)
+  //  _tcscpy_s(pExt, 4, _T("\0"));
 
   // Set the output filenames.
   for (int i = 0; handle[i]; i++)
@@ -1251,41 +1254,13 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
   //===========================================================
   /*pf_append*/
   const int TSPacketSize = 188;
-  bool afterResync = false;                                          //Resyncの直後？Resync時に同期バイト'G'はpbPacketは確認済
+  bool afterResync = false;                                          //Resyncの直後？  Resync時に同期バイト'G'は取得済み
   auto tickBeginTime = system_clock::now();                          //速度制限    計測開始時間
   double tickReadSize = 0;                                           //速度制限    200ms間の読込み量
   double limit_Bsec = cp->ReadSpeedLimit_MiBsec * 1024 * 1024;       //速度制限    最大読込み速度
   time_t timeRequestData = NULL;                                     //fread()した時間。強制終了用スレッドによる未接続時間の監視に使用
 
-  //強制終了用スレッド
-  //標準入力から一定時間データがこなければプロセスを強制終了させる
-  //一度データを確認できればスレッド終了
-  std::thread threadSelfKill;
-  bool RequestAbort_Selfkiller = false;
 
-  if (cp->Mode_Stdin)
-  {
-    threadSelfKill = std::thread([](time_t *timeRequestData, bool *RequestAbort_Selfkiller, ILogHandler *log)
-    {
-      while (true)
-      {
-        this_thread::sleep_for(chrono::milliseconds(5000));
-        if (*RequestAbort_Selfkiller == true) break;               //スレッド正常終了
-        else if (*timeRequestData == NULL) continue;
-
-        if (300 < time(NULL) - *timeRequestData)           //300秒で強制終了
-        {
-          if (log->active)
-          {
-            log->print("error:  Not detect data for 120sec from stdin.\r\n");
-            log->Close();
-          }
-          ExitProcess(1);                                  //プロセス強制終了
-          break;
-        }
-      }
-    }, &timeRequestData, &RequestAbort_Selfkiller, log);
-  }
 
   //
   // Main loop
@@ -1311,7 +1286,6 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
       afterResync = false;
     }
 
-    RequestAbort_Selfkiller = true;    //接続確認、強制終了用スレッド停止
     if (readNum == 0) break;           //EOF or close pipe
 
     //速度制限
@@ -1524,7 +1498,7 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
 
         // Update lastPTS.
         app.lastPTS = PTS;
-    }
+      }
       else {
         if (log->active)
           log->print("PTS, lastPTS, basePTS, startPCR : %11lld, %11lld, %11lld, %11lld    ",
@@ -1564,21 +1538,19 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
           result = C2A_ERR_MEMORY;
           goto EXIT;
         }
+    }
   }
-}
 
 EXIT:
-
-  /*pf_append*/
-  //自己終了用スレッド join確認
-  if (cp->Mode_Stdin){
-    RequestAbort_Selfkiller = true;
-    threadSelfKill.join();
-  }
-
   return result;
 }
 
+
+
+// 
+//
+//     -i "E:\sample.ts"  -o "E:\sample.ts"  -format srt  -NonCapTag
+//
 //
 int _tmain(int argc, _TCHAR *argv[])
 {
@@ -1638,6 +1610,7 @@ int _tmain(int argc, _TCHAR *argv[])
     //標準入力
     app.fpInputTs = stdin;
     _setmode(_fileno(stdin), _O_BINARY);
+    setvbuf(stdin, NULL, _IOFBF, 1024 * 256);
   }
   else
   {
@@ -1698,7 +1671,7 @@ int _tmain(int argc, _TCHAR *argv[])
   if (cp->NonCaptionTag)
   {
     //書込みがあったか？
-    //indexで判断、indexは初期化時に1。字幕を検出するたびに+1される。
+    //indexで判断、indexは初期化時に1、字幕を検出するたびに+1される。
     int sumIndex = 0;
     ICaptionHandler** caphandle = app.caption_handle;
 
@@ -1710,16 +1683,18 @@ int _tmain(int argc, _TCHAR *argv[])
         sumIndex += caphandle[i]->index - 1;
     }
 
+
     if (sumIndex == 0)
     {
       //NonCaptionTag作成
       FILE *fp;
-      TCHAR nontagPath[1024] = _T("");
-      _tcscat_s(nontagPath, 1024, cp->TargetFileName);
-      _tcscat_s(nontagPath, 1024, _T(".noncap"));
-      _tfopen_s(&fp, nontagPath, _T("w"));
+      TCHAR tagPath[1024] = _T("");
+      _tcscat_s(tagPath, 1024, cp->TargetFileName);
+      _tcscat_s(tagPath, 1024, _T(".noncap"));
+      fp = _tfsopen(tagPath, _T("wb"), _SH_DENYWR); //共有設定  読込みを許可
       fclose(fp);
     }
+
   }
   /*pf_end_append*/
 
