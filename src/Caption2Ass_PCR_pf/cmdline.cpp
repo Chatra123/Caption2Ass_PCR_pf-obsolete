@@ -67,7 +67,7 @@ extern int ParseCmd(int argc, TCHAR **argv, CCaption2AssParameter *param)
 
   // Set up the default value.
   cp->detectLength = 300 * 10000;      //about 3-5 min
-  cp->Mode_Stdin = false;              //pf_append
+  cp->Mode_PipeInput = false;          //pf_append
   cp->ReadSpeedLimit_MiBsec = 0;       //pf_append
   _tcscpy_s(cp->ass_type, string_length, _T("Default"));
 
@@ -99,11 +99,11 @@ extern int ParseCmd(int argc, TCHAR **argv, CCaption2AssParameter *param)
     //==================================================
     /*pf_append*/
     else if (_tcsicmp(argv[i], _T("-p")) == 0){
-      cp->Mode_Stdin = true;
+      cp->Mode_PipeInput = true;
       _tcscpy_s(cp->FileName, string_length, _T("pipe"));  //ダミーのファイル名を入れる。
     }
     else if (_tcsicmp(argv[i], _T("-pipe")) == 0){
-      cp->Mode_Stdin = true;
+      cp->Mode_PipeInput = true;
       _tcscpy_s(cp->FileName, string_length, _T("pipe"));  //ダミーのファイル名を入れる。
     }
     else if (_tcsicmp(argv[i], _T("-limit")) == 0){

@@ -423,8 +423,13 @@ int CAppHandler::Allocate(size_t string_length)
     goto ERR_EXIT;
   }
 
-  IOutputHandler   *output_handle[this->output_type_max] = { ass, srt, log, NULL };
-  ICaptionHandler *caption_handle[this->caption_type_max] = { ass, srt, NULL };
+  /*pf_append_off*/
+  //IOutputHandler   *output_handle[this->output_type_max] = { ass, srt, log, NULL };
+  //ICaptionHandler *caption_handle[this->caption_type_max] = { ass, srt, NULL };
+
+  /*pf_append*/
+  IOutputHandler   *output_handle[] = { ass, srt, log, NULL };
+  ICaptionHandler *caption_handle[] = { ass, srt, NULL };
 
   // Setup.
   this->string_length = string_length;
@@ -1258,8 +1263,6 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
   auto tickBeginTime = system_clock::now();                          //速度制限    計測開始時間
   double tickReadSize = 0;                                           //速度制限    200ms間の読込み量
   double limit_Bsec = cp->ReadSpeedLimit_MiBsec * 1024 * 1024;       //速度制限    最大読込み速度
-  time_t timeRequestData = NULL;                                     //fread()した時間。強制終了用スレッドによる未接続時間の監視に使用
-
 
 
   //
@@ -1270,7 +1273,6 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
 
     //データ読込
     int readNum;
-    timeRequestData = time(NULL);
     if (!afterResync)
     {
       //通常
@@ -1285,18 +1287,17 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
       readNum = fread(&pbPacket[1], TSPacketSize - 1, 1, app.fpInputTs);
       afterResync = false;
     }
-
     if (readNum == 0) break;           //EOF or close pipe
 
     //速度制限
-    if (cp->Mode_Stdin == false && 0 < limit_Bsec)
+    if (cp->Mode_PipeInput == false && 0 < limit_Bsec)
     {
-      tickReadSize += readNum * TSPacketSize;                                  //単位時間の読込み量
-      auto tickDuration = system_clock::now() - tickBeginTime;                 //経過時間
-      auto duration_ms = duration_cast<chrono::milliseconds>(tickDuration).count();
+      tickReadSize += readNum * TSPacketSize;                                //単位時間の読込み量
+      auto tickElapse = system_clock::now() - tickBeginTime;                 //経過時間
+      auto elapse_ms = duration_cast<chrono::milliseconds>(tickElapse).count();
 
-      //単位時間ごとにカウンタリセット
-      if (200 <= duration_ms)
+      //200msごとにカウンタリセット
+      if (200 <= elapse_ms)
       {
         tickBeginTime = system_clock::now();
         tickReadSize = 0;
@@ -1304,7 +1305,7 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
 
       //読込量が制限をこえたらsleep_for
       if (limit_Bsec * (200.0 / 1000.0) < tickReadSize)
-        this_thread::sleep_for(chrono::milliseconds(200 - duration_ms));
+        this_thread::sleep_for(chrono::milliseconds(200 - elapse_ms));
     }
 
     /*pf_end_append*/
@@ -1549,13 +1550,11 @@ EXIT:
 
 // 
 //
-//     -i "E:\sample.ts"  -o "E:\sample.ts"  -format srt  -NonCapTag
+//     -i "E:\TS_Samp\cap8s.ts"  -o "E:\TS_Samp\cap8s.ts"  -format srt  -NonCapTag
 //
 //
 int _tmain(int argc, _TCHAR *argv[])
 {
-  //DebugBreak();
-
   int             result = C2A_SUCCESS;
   CCaptionDllUtil capUtil;
   CAPTION_LIST    capList;
@@ -1605,7 +1604,7 @@ int _tmain(int argc, _TCHAR *argv[])
 
   /*pf_append*/
   //Open File
-  if (cp->Mode_Stdin)
+  if (cp->Mode_PipeInput)
   {
     //標準入力
     app.fpInputTs = stdin;
