@@ -8,7 +8,7 @@
 #include "cmdline.h"
 #include "CaptionDef.h"
 
-#include <iostream>  /*pf_append*/
+#include <iostream>
 
 static void usage(int argc)
 {
@@ -43,8 +43,7 @@ static void usage(int argc)
 
   if (argc < 2) {
     for (int i = 0; help[i]; i++)
-      _ftprintf_s(stderr, _T("%s\n"), help[i]);    /*pf_append*/
-    //_ftprintf_s(stdout, _T("%s\n"), help[i]);    /*pf_off*/
+      _ftprintf_s(stderr, _T("%s\n"), help[i]);
   }
   else {
     for (int i = 0; help[i]; i++)
@@ -66,9 +65,9 @@ extern int ParseCmd(int argc, TCHAR **argv, CCaption2AssParameter *param)
   size_t string_length = param->string_length;
 
   // Set up the default value.
-  cp->detectLength = 300 * 10000;      //about 3-5 min
-  cp->Mode_PipeInput = false;          //pf_append
-  cp->ReadSpeedLimit_MiBsec = 0;       //pf_append
+  cp->detectLength = 300 * 10000;      //about 3 - 5 min
+  cp->Mode_PipeInput = false;
+  cp->ReadSpeedLimit_MiBsec = 0;
   _tcscpy_s(cp->ass_type, string_length, _T("Default"));
 
   // Parse args.
@@ -97,14 +96,13 @@ extern int ParseCmd(int argc, TCHAR **argv, CCaption2AssParameter *param)
     }
 
     //==================================================
-    /*pf_append*/
     else if (_tcsicmp(argv[i], _T("-p")) == 0){
       cp->Mode_PipeInput = true;
-      _tcscpy_s(cp->FileName, string_length, _T("pipe"));  //ダミーのファイル名を入れる。
+      _tcscpy_s(cp->FileName, string_length, _T("pipe"));  //"pipe" is dummy filename
     }
     else if (_tcsicmp(argv[i], _T("-pipe")) == 0){
       cp->Mode_PipeInput = true;
-      _tcscpy_s(cp->FileName, string_length, _T("pipe"));  //ダミーのファイル名を入れる。
+      _tcscpy_s(cp->FileName, string_length, _T("pipe"));  //"pipe" is dummy filename
     }
     else if (_tcsicmp(argv[i], _T("-limit")) == 0){
       i++;
@@ -114,7 +112,6 @@ extern int ParseCmd(int argc, TCHAR **argv, CCaption2AssParameter *param)
     else if (_tcsicmp(argv[i], _T("-NonCapTag")) == 0){
       cp->NonCaptionTag = true;
     }
-    /*pf_end_append*/
     //==================================================
 
     else if (_tcsicmp(argv[i], _T("-i")) == 0) {
@@ -198,11 +195,7 @@ extern void _tMyPrintf(IN  LPCTSTR tracemsg, ...)
       ptr
       );
     if (ret == S_OK) {
-      //DWORD ws;                                                                            /*pf_off*/
-      //WriteConsole(GetStdHandle(STD_OUTPUT_HANDLE), buf, (DWORD)_tcslen(buf), &ws, NULL);  /*pf_off*/
-
-      //STD_OUTPUT_HANDLからcerrに変更  /*pf_append*/
-      std::cerr << buf << std::flush;;  /*pf_append*/
+      std::cerr << buf << std::flush;
     }
   }
   __finally {

@@ -10,7 +10,7 @@
 
 extern BOOL FindStartOffset(FILE *fp);
 extern BOOL resync(BYTE *pbPacket, FILE *fp);
-extern BOOL resync2(BYTE *pbPacket, FILE *fp, const int TSPacketSize);         /*pf_append*/
+extern BOOL resync2(BYTE *pbPacket, FILE *fp, const int TSPacketSize);
 
 extern long long GetPTS(BYTE *pbPacket);
 extern void parse_PAT(BYTE *pbPacket, USHORT *PMTPid);

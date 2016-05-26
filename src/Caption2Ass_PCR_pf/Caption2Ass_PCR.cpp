@@ -6,7 +6,7 @@
 #include <shlwapi.h>
 #include <vector>
 
-/*pf_append*/
+
 #include <io.h>
 #include <fcntl.h>
 #include <iostream>
@@ -15,7 +15,7 @@
 #include <thread>
 using namespace std::chrono;
 using namespace std;
-/*pf_end_append*/
+
 
 #include "CommRoutine.h"
 #include "CaptionDllUtil.h"
@@ -168,16 +168,15 @@ class IOutputHandler
 {
 public:
   int             active;
-  DWORD           index;                                   /*pf_append*/
+  DWORD           index;
 
 protected:
   format_type     format;
   TCHAR          *name;
   FILE           *fp;
-  //DWORD         index;                                   /*publicに移動*/
   size_t          string_length;
   IAppHandler    *app;
-  time_t timeLastFlush;                                    /*pf_append*/
+  time_t          timeLastFlush;
 
 protected:
   void initialize(format_type format = FORMAT_INVALID, IAppHandler *app = NULL)
@@ -189,7 +188,7 @@ protected:
     this->index = 0;
     this->string_length = MAX_PATH;
     this->app = app;
-    this->timeLastFlush = time(NULL);                      /*pf_append*/
+    this->timeLastFlush = time(NULL);
   }
   void release(void)
   {
@@ -208,20 +207,11 @@ protected:
     if (_tcsicmp(this->name, _T("")) == 0)
       return 1;
 
-    /*pf_append*/
-    this->fp = _tfsopen(this->name, _T("wb"), _SH_DENYWR); //共有設定  読込みを許可
-
+    this->fp = _tfsopen(this->name, _T("wb"), _SH_DENYWR);
     if (this->fp == NULL) {
       _tMyPrintf(_T("Open %s File: %s failed\r\n"), file_type, this->name);
       return -1;
     }
-    /*pf_end_append*/
-    /*pf_off*/
-    //if (_tfopen_s(&(this->fp), this->name, _T("wb")) || !(this->fp)) {
-    //  _tMyPrintf(_T("Open %s File: %s failed\r\n"), file_type, this->name);
-    //  return -1;
-    //}
-    /*pf_end_off*/
 
     this->index = 1;
     this->active = 1;
@@ -232,10 +222,7 @@ protected:
     if (this->fp) {
       fclose(this->fp);
       if (removed) {
-        //Sleep(1000);                                     /*pf_off*/
-        //remove(this->name);                              /*pf_off*/
 
-        /*pf_append*/
         /*他のプロセスから読み込まれている間は削除できない。数回繰り返す。*/
         for (size_t i = 0; i < 3; i++)
         {
@@ -423,11 +410,6 @@ int CAppHandler::Allocate(size_t string_length)
     goto ERR_EXIT;
   }
 
-  /*pf_append_off*/
-  //IOutputHandler   *output_handle[this->output_type_max] = { ass, srt, log, NULL };
-  //ICaptionHandler *caption_handle[this->caption_type_max] = { ass, srt, NULL };
-
-  /*pf_append*/
   IOutputHandler   *output_handle[] = { ass, srt, log, NULL };
   ICaptionHandler *caption_handle[] = { ass, srt, NULL };
 
@@ -855,14 +837,14 @@ do {                            \
     }
     fprintf(fp, "\r\n");
 
-    /*pf_append*/
+
     // flush at least every 6 sec
     if (6 < time(NULL) - timeLastFlush)
     {
       fflush(fp);
       timeLastFlush = time(NULL);
     }
-    /*pf_end_append*/
+
   }
 
   if (capList.size() > 0) {
@@ -924,11 +906,6 @@ static void setup_output_filename(CAppHandler& app)
   if (_tcsicmp(cp->TargetFileName, _T("")) == 0)
     _tcscpy_s(cp->TargetFileName, string_length, cp->FileName);
   TCHAR *pExt = PathFindExtension(cp->TargetFileName);
-
-  // pf_off    拡張子.tsがあってもそのままにする
-  //
-  //if (pExt && _tcsicmp(pExt, _T(".ts")) == 0)
-  //  _tcscpy_s(pExt, 4, _T("\0"));
 
   // Set the output filenames.
   for (int i = 0; handle[i]; i++)
@@ -1042,9 +1019,9 @@ static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LI
       }
 
       //capListのサイズを確認するようにした。
-      //空のcapListに反応して、cp->detectLengthの処理中断ができないことがあった。
-      if (0 < capList.size())  app.bCreateOutput = TRUE;   /*pf_append*/
-      //app.bCreateOutput = TRUE;                          /*pf_off*/
+      //  空のcapListに反応して、cp->detectLengthの処理中断ができないことがあった。
+      if (0 < capList.size())  app.bCreateOutput = TRUE;
+
 
       DWORD endTime = (DWORD)((PTS + it->dwWaitTime) - app.startPCR);
       for (int i = 0; handle[i]; i++)
@@ -1256,19 +1233,15 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
   BYTE pbPacket[188 * 2 + 4] = { 0 };
   DWORD packetCount = 0;
 
-  //===========================================================
-  /*pf_append*/
   const int TSPacketSize = 188;
   bool afterResync = false;                                          //Resyncの直後？  Resync時に同期バイト'G'は取得済み
   auto tickBeginTime = system_clock::now();                          //速度制限    計測開始時間
   double tickReadSize = 0;                                           //速度制限    200ms間の読込み量
   double limit_Bsec = cp->ReadSpeedLimit_MiBsec * 1024 * 1024;       //速度制限    最大読込み速度
 
-
   //
   // Main loop
   //
-  //while (fread(pbPacket, 188, 1, app.fpInputTs) == 1) {
   while (true){
 
     //データ読込
@@ -1308,8 +1281,6 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
         this_thread::sleep_for(chrono::milliseconds(200 - elapse_ms));
     }
 
-    /*pf_end_append*/
-    //===========================================================
 
     packetCount++;
     if (cp->detectLength > 0) {
@@ -1340,7 +1311,6 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
     Packet_Header packet;
     parse_Packet_Header(&packet, &pbPacket[0]);
 
-    /*pf_append*/
     if (packet.Sync != 'G')
     {
       if (!resync2(pbPacket, app.fpInputTs, TSPacketSize))
@@ -1357,18 +1327,7 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
       Packet_Header packet;
       parse_Packet_Header(&packet, &pbPacket[0]);
     }
-    /*pf_end_append*/
-    /*pf_off*/
-    //if (packet.Sync != 'G') {
-    //    if (!resync(pbPacket, app.fpInputTs)) {
-    //        _tMyPrintf(_T("Invalid TS File.\r\n"));
-    //        Sleep(2000);
-    //        result = C2A_FAILURE;
-    //        goto EXIT;
-    //    }
-    //    continue;
-    //}
-    /*pf_end_off*/
+
 
     if (packet.TsErr)
       continue;
@@ -1549,7 +1508,7 @@ EXIT:
 
 
 // 
-//
+//command line example
 //     -i "E:\TS_Samp\cap8s.ts"  -o "E:\TS_Samp\cap8s.ts"  -format srt  -NonCapTag
 //
 //
@@ -1602,18 +1561,18 @@ int _tmain(int argc, _TCHAR *argv[])
   _tMyPrintf(_T("[Target] %s\r\n"), cp->TargetFileName);
   _tMyPrintf(_T("[Format] %s\r\n"), format_name[cp->format]);
 
-  /*pf_append*/
+
   //Open File
   if (cp->Mode_PipeInput)
   {
-    //標準入力
+    //stdin
     app.fpInputTs = stdin;
     _setmode(_fileno(stdin), _O_BINARY);
-    setvbuf(stdin, NULL, _IOFBF, 1024 * 256);
+    setvbuf(stdin, NULL, _IOFBF, 1024 * 64);
   }
   else
   {
-    //ファイル
+    //file
     if (_tfopen_s(&(app.fpInputTs), cp->FileName, _T("rb"))
       || !(app.fpInputTs))
     {
@@ -1630,22 +1589,6 @@ int _tmain(int argc, _TCHAR *argv[])
       goto EXIT;
     }
   }
-  /*pf_end_append*/
-  /*pf_off*/
-  // Open TS File.
-  //if (_tfopen_s(&(app.fpInputTs), cp->FileName, _T("rb")) || !(app.fpInputTs)) {
-  //  _tMyPrintf(_T("Open TS File: %s failed\r\n"), cp->FileName);
-  //  result = C2A_ERR_PARAM;
-  //  goto EXIT;
-  //}
-  //// Check TS File.
-  //if (!FindStartOffset(app.fpInputTs)) {
-  //  _tMyPrintf(_T("Invalid TS File.\r\n"));
-  //  Sleep(2000);
-  //  result = C2A_FAILURE;
-  //  goto EXIT;
-  //}
-  /*pf_end_off*/
 
   // Open ASS/SRT/Log File.
   if (open_output_files(app)) {
@@ -1665,7 +1608,6 @@ int _tmain(int argc, _TCHAR *argv[])
   // Main loop
   result = main_loop(app, capUtil, capList);
 
-  /*pf_append*/
   //NonCaptionTag作成
   if (cp->NonCaptionTag)
   {
@@ -1673,7 +1615,6 @@ int _tmain(int argc, _TCHAR *argv[])
     //indexで判断、indexは初期化時に1、字幕を検出するたびに+1される。
     int sumIndex = 0;
     ICaptionHandler** caphandle = app.caption_handle;
-
     for (int i = 0; caphandle[i]; i++)
     {
       if (caphandle[i]->index <= 1)
@@ -1681,7 +1622,6 @@ int _tmain(int argc, _TCHAR *argv[])
       else
         sumIndex += caphandle[i]->index - 1;
     }
-
 
     if (sumIndex == 0)
     {
@@ -1693,9 +1633,8 @@ int _tmain(int argc, _TCHAR *argv[])
       fp = _tfsopen(tagPath, _T("wb"), _SH_DENYWR); //共有設定  読込みを許可
       fclose(fp);
     }
-
   }
-  /*pf_end_append*/
+
 
 EXIT:
   clear_caption_list(capList);

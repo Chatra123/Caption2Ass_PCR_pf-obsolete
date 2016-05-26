@@ -8,21 +8,20 @@
 #include "tslUtil.h"
 #include "Caption2Ass_PCR.h"
 
-//==================================================================================================
-/*pf_append*/
+
+//
 //  標準入力ストリームでも処理できるように_fseeki64()を使わないようにした。
-//  次のパケットの同期バイト'G'をこの処理で読み込むため、
-//  メインループでは'G'より後を読み込むこと。
+//  次パケットの同期バイト'G'をこの処理で読み込むため、メインループでは'G'より後を読み込むこと。
 //
 extern BOOL resync2(BYTE *pbPacket, FILE *fp, const int TSPacketSize)
 {
-  int   tryCounter = 0, readNum = 0;
+  int tryCounter = 0, readNum = 0;
   BYTE nextSync = 0x00;
 
   while (nextSync != 'G')
   {
     tryCounter++;
-    if (30 * 10000 < tryCounter) return false;                       //error: Could'nt find 'G'   (about 30sec)
+    if (30 * 10000 < tryCounter) return false;                       //error: Could'nt find 'G'   (about 20 - 30sec)
 
     readNum = fread_s(pbPacket, TSPacketSize, TSPacketSize, 1, fp);
     if (readNum == 0) return false;                                  //error: Unexpected EOF or close pipe
@@ -38,7 +37,7 @@ extern BOOL resync2(BYTE *pbPacket, FILE *fp, const int TSPacketSize)
       memmove(pbPacket, pSyncByte, _2ndPartSize);                    //  'G' ... pbPacket[TSPacketSize-1]
 
       //_2ndPartの後ろに追加読込
-      //もし_1stPartSize == 0ならすでに_2ndPartSize = 188
+      //_1stPartSize == 0ならすでに_2ndPartSize = 188
       if (_1stPartSize != 0)
       {                                                              //  'G' ... pbPacket[TSPacketSize-1]  +  additional data
         readNum = fread_s(&pbPacket[_2ndPartSize], _1stPartSize, _1stPartSize, 1, fp);
@@ -52,8 +51,8 @@ extern BOOL resync2(BYTE *pbPacket, FILE *fp, const int TSPacketSize)
 
   return true;
 }
-/*pf_end_append*/
-//==================================================================================================
+
+
 
 extern BOOL FindStartOffset(FILE *fp)
 {
@@ -152,7 +151,6 @@ extern void parse_PAT(BYTE *pbPacket, USHORT *PMTPid)
   _tMyPrintf(_T("Set PMT_PID to %x\r\n"), *PMTPid);
   _tMyPrintf(_T("Press any key to start\r\n"));
 
-  //Sleep(2000);/*pf_off*/
 }
 
 extern void parse_PMT(BYTE *pbPacket, USHORT *PCRPid, USHORT *CaptionPid)

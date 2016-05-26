@@ -25,9 +25,9 @@ typedef struct {
   TCHAR      *FileName;
   TCHAR      *TargetFileName;
   TCHAR      *LogFileName;
-  BOOL        Mode_PipeInput;          /*pf_append*/
-  double      ReadSpeedLimit_MiBsec;   /*pf_append*/
-  BOOL        NonCaptionTag;           /*pf_append*/
+  BOOL        Mode_PipeInput;
+  double      ReadSpeedLimit_MiBsec;
+  BOOL        NonCaptionTag;
 } cli_parameter_t;
 
 typedef struct {
