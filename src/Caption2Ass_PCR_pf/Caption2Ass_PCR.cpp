@@ -1245,7 +1245,7 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
   while (true){
 
     //ÉfÅ[É^ì«çû
-    int readNum;
+    size_t readNum;
     if (!afterResync)
     {
       //í èÌ
