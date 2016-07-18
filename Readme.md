@@ -13,10 +13,10 @@ Run_Caption2Ass_PCR_pf.batのショートカットを作成し、TSファイル�
 ### 使い方　　コマンドライン
 
 ファイル  
-Caption2Ass_PCR_pf.exe  -i "C:\video.ts"  -o "C:\video.ts"  -format srt
+Caption2Ass_PCR_pf.exe  -i "C:\video.ts"  -o "C:\video.ts"  -format srt  
 
 パイプ  
-Caption2Ass_PCR_pf.exe  -pipe  -o "C:\video.ts"  -format srt
+Caption2Ass_PCR_pf.exe  -pipe  -o "C:\video.ts"  -format srt  
 
 
 
