@@ -1324,7 +1324,6 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
 
       //再同期後のパケットはpbPacketに読込み済、パースして続行
       afterResync = true;
-      Packet_Header packet;
       parse_Packet_Header(&packet, &pbPacket[0]);
     }
 
@@ -1535,6 +1534,7 @@ int _tmain(int argc, _TCHAR *argv[])
   // Parse arguments.
   if (ParseCmd(argc, argv, param)) {
     result = C2A_ERR_PARAM;
+    Sleep(2000);
     goto EXIT;
   }
   pid_information_t *pi = static_cast<pid_information_t *>(app.GetParam(C2A_PARAM_PID));
@@ -1545,6 +1545,7 @@ int _tmain(int argc, _TCHAR *argv[])
   if (initialize_caption_dll(app, capUtil)) {
     _tMyPrintf(_T("Load Caption.dll failed\r\n"));
     result = C2A_ERR_DLL;
+    Sleep(2000);
     goto EXIT;
   }
 
@@ -1581,13 +1582,16 @@ int _tmain(int argc, _TCHAR *argv[])
       goto EXIT;
     }
 
+    /* FindStartOffsetをやめてmain loopのresync2で同期させる。*/
+    /* FindStartOffsetは２パケット or All */
+
     // Check TS File.
-    if (!FindStartOffset(app.fpInputTs)) {
-      _tMyPrintf(_T("Invalid TS File.\r\n"));
-      Sleep(2000);
-      result = C2A_FAILURE;
-      goto EXIT;
-    }
+    //if (!FindStartOffset(app.fpInputTs)) {
+    //  _tMyPrintf(_T("Invalid TS File.\r\n"));
+    //  Sleep(2000);
+    //  result = C2A_FAILURE;
+    //  goto EXIT;
+    //}
   }
 
   // Open ASS/SRT/Log File.

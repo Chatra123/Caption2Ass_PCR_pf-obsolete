@@ -17,9 +17,14 @@ extern BOOL resync2(BYTE *pbPacket, FILE *fp, const int TSPacketSize)
 {
   size_t readNum = 0;
   BYTE nextSync = 0x00;
+  int retry = 0;
 
   while (nextSync != 'G')
   {
+    retry++;
+    if (10000 * 10 <= retry) return false;                           // timeout 10 sec
+
+
     readNum = fread_s(pbPacket, TSPacketSize, TSPacketSize, 1, fp);
     if (readNum == 0) return false;                                  //error: Unexpected EOF or close pipe
 
@@ -28,7 +33,7 @@ extern BOOL resync2(BYTE *pbPacket, FILE *fp, const int TSPacketSize)
     if (pSyncByte != NULL)                                           //find 'G'
     {
       intptr_t _1stPartSize = pSyncByte - pbPacket;                  //  pbPacket[0] ... ['G'-1]
-      intptr_t _2ndPartSize = TSPacketSize - _1stPartSize;           //                           ['G'] ... pbPacket[TSPacketSize-1]
+      intptr_t _2ndPartSize = TSPacketSize - _1stPartSize;           //                           'G' ... pbPacket[TSPacketSize-1]
 
       //_2ndPart‚ðpbPacket‚Ìæ“ª‚ÉˆÚ“®
       memmove(pbPacket, pSyncByte, _2ndPartSize);                    //  'G' ... pbPacket[TSPacketSize-1]
