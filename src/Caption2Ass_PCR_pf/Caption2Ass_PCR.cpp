@@ -905,6 +905,9 @@ static void setup_output_filename(CAppHandler& app)
   // Check the target name.
   if (_tcsicmp(cp->TargetFileName, _T("")) == 0)
     _tcscpy_s(cp->TargetFileName, string_length, cp->FileName);
+  TCHAR *pExt = PathFindExtension(cp->TargetFileName);
+  if (pExt && _tcsicmp(pExt, _T(".ts")) == 0)
+    _tcscpy_s(pExt, 4, _T("\0"));
 
   // Set the output filenames.
   for (int i = 0; handle[i]; i++)
