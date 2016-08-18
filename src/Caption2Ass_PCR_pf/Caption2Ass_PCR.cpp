@@ -905,7 +905,6 @@ static void setup_output_filename(CAppHandler& app)
   // Check the target name.
   if (_tcsicmp(cp->TargetFileName, _T("")) == 0)
     _tcscpy_s(cp->TargetFileName, string_length, cp->FileName);
-  TCHAR *pExt = PathFindExtension(cp->TargetFileName);
 
   // Set the output filenames.
   for (int i = 0; handle[i]; i++)
@@ -1506,9 +1505,36 @@ EXIT:
 
 
 
+///  NonCaptionTag作成
+void CreateNonCapTag(CAppHandler &app, TCHAR *filename)
+{
+  //字幕があったか？
+  //indexで判断、indexは初期化時に1、字幕を検出するたびに+1される。
+  bool hasCap = false;
+  ICaptionHandler** caphandle = app.caption_handle;
+  for (int i = 0; caphandle[i]; i++)
+  {
+    if (caphandle[i]->index <= 1)
+      continue;
+    else
+      hasCap = true;
+  }
+
+  if (hasCap == false)
+  {
+    TCHAR tagPath[1024] = {};
+    _tcscat_s(tagPath, 1024, filename);
+    _tcscat_s(tagPath, 1024, _T(".noncap"));
+    FILE *fp = _tfsopen(tagPath, _T("wb"), _SH_DENYWR); //共有設定  読込みを許可
+    fclose(fp);
+  }
+}
+
+
+
 // 
 //command line example
-//     -i "E:\TS_Samp\cap8s.ts"  -o "E:\TS_Samp\cap8s.ts"  -format srt  -NonCapTag
+//     -i "E:\TS_Samp\cap8s.ts"  -format srt  -NonCapTag
 //
 //
 int _tmain(int argc, _TCHAR *argv[])
@@ -1581,10 +1607,8 @@ int _tmain(int argc, _TCHAR *argv[])
       result = C2A_ERR_PARAM;
       goto EXIT;
     }
-
     /* FindStartOffsetをやめてmain loopのresync2で同期させる。*/
     /* FindStartOffsetは２パケット or All */
-
     // Check TS File.
     //if (!FindStartOffset(app.fpInputTs)) {
     //  _tMyPrintf(_T("Invalid TS File.\r\n"));
@@ -1612,32 +1636,9 @@ int _tmain(int argc, _TCHAR *argv[])
   // Main loop
   result = main_loop(app, capUtil, capList);
 
-  //NonCaptionTag作成
+  // NonCaptionTag作成
   if (cp->NonCaptionTag)
-  {
-    //書込みがあったか？
-    //indexで判断、indexは初期化時に1、字幕を検出するたびに+1される。
-    int sumIndex = 0;
-    ICaptionHandler** caphandle = app.caption_handle;
-    for (int i = 0; caphandle[i]; i++)
-    {
-      if (caphandle[i]->index <= 1)
-        continue;
-      else
-        sumIndex += caphandle[i]->index - 1;
-    }
-
-    if (sumIndex == 0)
-    {
-      //NonCaptionTag作成
-      FILE *fp;
-      TCHAR tagPath[1024] = _T("");
-      _tcscat_s(tagPath, 1024, cp->TargetFileName);
-      _tcscat_s(tagPath, 1024, _T(".noncap"));
-      fp = _tfsopen(tagPath, _T("wb"), _SH_DENYWR); //共有設定  読込みを許可
-      fclose(fp);
-    }
-  }
+    CreateNonCapTag(app, cp->TargetFileName);
 
 
 EXIT:
