@@ -28,20 +28,20 @@ extern BOOL resync2(BYTE *pbPacket, FILE *fp, const int TSPacketSize)
     readNum = fread_s(pbPacket, TSPacketSize, TSPacketSize, 1, fp);
     if (readNum == 0) return false;                                  //error: Unexpected EOF or close pipe
 
-    BYTE *pSyncByte = (BYTE*)memchr(pbPacket, 'G', TSPacketSize);    //seek 'G' inside *pbPacket
+    BYTE *pSyncByte = (BYTE*)memchr(pbPacket, 'G', TSPacketSize);    //find 'G' inside pbPacket
 
-    if (pSyncByte != NULL)                                           //find 'G'
+    if (pSyncByte != NULL)
     {
       intptr_t _1stPartSize = pSyncByte - pbPacket;                  //  pbPacket[0] ... ['G'-1]
-      intptr_t _2ndPartSize = TSPacketSize - _1stPartSize;           //                           'G' ... pbPacket[TSPacketSize-1]
+      intptr_t _2ndPartSize = TSPacketSize - _1stPartSize;           //                           'G' ... pbPacket[187]
 
       //_2ndPartÇpbPacketÇÃêÊì™Ç…à⁄ìÆ
-      memmove(pbPacket, pSyncByte, _2ndPartSize);                    //  'G' ... pbPacket[TSPacketSize-1]
+      memmove(pbPacket, pSyncByte, _2ndPartSize);                    //  'G' ... pbPacket[187]
 
       //_2ndPartÇÃå„ÇÎÇ…í«â¡ì«çû
       //_1stPartSize == 0Ç»ÇÁÇ∑Ç≈Ç…_2ndPartSize = 188
       if (_1stPartSize != 0)
-      {                                                              //  'G' ... pbPacket[TSPacketSize-1]  +  additional data
+      {                                                              //  'G' ... pbPacket[187]  +  additional data
         readNum = fread_s(&pbPacket[_2ndPartSize], _1stPartSize, _1stPartSize, 1, fp);
         if (readNum == 0) return false;                              //error: Unexpected EOF or close pipe
       }

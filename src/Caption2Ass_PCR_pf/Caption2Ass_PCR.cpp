@@ -1246,7 +1246,6 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
   //
   while (true){
 
-    //データ読込
     size_t readNum;
     if (!afterResync)
     {
@@ -1509,7 +1508,7 @@ EXIT:
 
 
 ///  NonCaptionTag作成
-void CreateNonCapTag(CAppHandler &app, TCHAR *filename)
+void CreateNonCapTag(CAppHandler &app, TCHAR *targetName)
 {
   //字幕があったか？
   //indexで判断、indexは初期化時に1、字幕を検出するたびに+1される。
@@ -1526,7 +1525,7 @@ void CreateNonCapTag(CAppHandler &app, TCHAR *filename)
   if (hasCap == false)
   {
     TCHAR tagPath[1024] = {};
-    _tcscat_s(tagPath, 1024, filename);
+    _tcscat_s(tagPath, 1024, targetName);
     _tcscat_s(tagPath, 1024, _T(".noncap"));
     FILE *fp = _tfsopen(tagPath, _T("wb"), _SH_DENYWR); //共有設定  読込みを許可
     fclose(fp);
