@@ -13,7 +13,7 @@ Run_Caption2Ass_PCR_pf.batのショートカットを作成し、TSファイル�
 ### 使い方　　コマンドライン
 
 ファイル  
-Caption2Ass_PCR_pf.exe  -i "C:\video.ts"  -o "C:\video.ts"  -format srt  
+Caption2Ass_PCR_pf.exe  -i "C:\video.ts"  -format srt  
 
 パイプ  
 Caption2Ass_PCR_pf.exe  -pipe  -o "C:\video.ts"  -format srt  
@@ -33,7 +33,7 @@ Caption2Ass_PCR_pf.exe  -pipe  -o "C:\video.ts"  -format srt
 
 
     -NonCapTag
-tsファイルに字幕が含まれてない場合に空のファイル .noncapを出力
+tsファイルに字幕が含まれてない場合に空のファイル .noncapを作成
 
 
 
@@ -47,7 +47,7 @@ tsファイルに字幕が含まれてない場合に空のファイル .noncap�
 
 
     -detect_length 300
-300×10,000パケットを探索して字幕が見つからなければプロセスを終了します。  
+300×10,000パケットを探索して字幕が見つからなければ終了します。  
 およそ３～５分間のデータ量に相当  
 -detect_lengthの指定が無いときの初期値は300  
 
@@ -57,40 +57,10 @@ tsファイルに字幕が含まれてない場合に空のファイル .noncap�
 に記載されています。
 
 
-------------------------------------------------------------------
-### Caption2Ass_PCRからの変更
-
-出力ファイル名を少し変更  
-出力ファイル名から、.tsを自動で除去しないようにした。  
-以前のように video.srt と出力するには -o "C:\video"と指定してください。  
-
-|   引数            |  変更前     |  変更後        |
-|:------------------|:------------|:---------------|
-|  -o "C:\video.ts" |  video.srt  |  video.ts.srt  |
-|                   |             |                |
-
 
 ------------------------------------------------------------------
 ### 謝辞
 maki/maki_rxrzさん公開のCaption2Ass_PCR_20131011_Experimentalを元に作成しました。
 オリジナル及び改良版の開発に関わった方々にお礼申し上げます。
-
-
-------------------------------------------------------------------
-### ライセンス
-以下Caption2Ass_PCR.exe の Readme.txtより、
-
-●EpgDataCap_Bon、TSEpgView_Sample、NetworkRemocon、Caption、TSEpgViewServerの
-ソースの取り扱いについて
-　特にGPLとかにはしないので自由に改変してもらって構わないです。
-　改変して公開する場合は改変部分のソースぐらいは一緒に公開してください。
-　（強制ではないので別に公開しなくてもいいです）
-　EpgDataCap.dllの使い方の参考にしてもらうといいかも。
-
-●EpgDataCap.dll、Caption.dllの取り扱いについて
-　フリーソフトに組み込む場合は特に制限は設けません。ただし、dllはオリジナルのまま
-　組み込んでください。
-　このdllを使用したことによって発生した問題について保証は一切行いません。
-　商用、シェアウェアなどに組み込むのは不可です。
 
 
