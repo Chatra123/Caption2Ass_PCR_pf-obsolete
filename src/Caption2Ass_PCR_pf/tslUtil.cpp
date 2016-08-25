@@ -9,50 +9,67 @@
 #include "Caption2Ass_PCR.h"
 
 
+
 //
 //  標準入力ストリームでも処理できるように_fseeki64()を使わないようにした。
 //  次パケットの同期バイト'G'をこの処理で読み込むため、メインループでは'G'より後を読み込むこと。
 //
 extern BOOL resync2(BYTE *pbPacket, FILE *fp, const int TSPacketSize)
 {
-  size_t readNum = 0;
-  BYTE nextSync = 0x00;
   int retry = 0;
 
-  while (nextSync != 'G')
+  while (true)
   {
     retry++;
-    if (10000 * 10 <= retry) return false;                           // timeout 10 sec
+    if (10000 * 10 <= retry) return false;                 // timeout 10 sec
 
-
-    readNum = fread_s(pbPacket, TSPacketSize, TSPacketSize, 1, fp);
-    if (readNum == 0) return false;                                  //error: Unexpected EOF or close pipe
-
-    BYTE *pSyncByte = (BYTE*)memchr(pbPacket, 'G', TSPacketSize);    //find 'G' inside pbPacket
-
-    if (pSyncByte != NULL)
+    BYTE *pSync = (BYTE*)memchr(pbPacket, 'G', TSPacketSize);
+    if (pSync == NULL)
     {
-      intptr_t _1stPartSize = pSyncByte - pbPacket;                  //  pbPacket[0] ... ['G'-1]
-      intptr_t _2ndPartSize = TSPacketSize - _1stPartSize;           //                           'G' ... pbPacket[187]
+      //not found 'G'
+      size_t read = fread_s(&pbPacket[0], TSPacketSize, TSPacketSize, 1, fp);
+      if (read == 0) return false;                         //error: Unexpected EOF or closed pipe
+      continue;
+    }
+    else
+    {
+      //found 'G'
+      intptr_t _1stPartSize = pSync - pbPacket;            //  pbPacket[0] ... ['G'-1]
+      intptr_t _2ndPartSize = TSPacketSize - _1stPartSize; //                           'G' ... pbPacket[187]
 
-      //_2ndPartをpbPacketの先頭に移動
-      memmove(pbPacket, pSyncByte, _2ndPartSize);                    //  'G' ... pbPacket[187]
+      //_2ndPartを先頭に移動
+      memmove(pbPacket, pSync, _2ndPartSize);              //  'G' ... pbPacket[187]
 
-      //_2ndPartの後ろに追加読込
-      //_1stPartSize == 0ならすでに_2ndPartSize = 188
-      if (_1stPartSize != 0)
-      {                                                              //  'G' ... pbPacket[187]  +  additional data
-        readNum = fread_s(&pbPacket[_2ndPartSize], _1stPartSize, _1stPartSize, 1, fp);
-        if (readNum == 0) return false;                              //error: Unexpected EOF or close pipe
+      int extra = TSPacketSize - _2ndPartSize;
+      if (0 < extra)
+      {                                                    //  'G' ... pbPacket[187]  extra
+        size_t read = fread_s(&pbPacket[_2ndPartSize], extra, extra, 1, fp);
+        if (read == 0) return false;                       //error: Unexpected EOF or closed pipe
       }
+    }
 
-      readNum = fread_s(&nextSync, 1, 1, 1, fp);                     //read 'G' of next packet
-      if (readNum == 0) return true;                                 //Last packet  or  close pipe
+
+    //check next 'G'
+    BYTE nextSync = 0x00;
+    size_t read = fread_s(&nextSync, 1, 1, 1, fp);
+    if (read == 0) return true;                            //  Last packet  or  closed pipe
+
+    if (nextSync == 'G')
+    {
+      /* synced */
+      return true;
+    }
+    else
+    {                                                      //  pbPacket[0] ... pbPacket[187]
+      memmove(&pbPacket[0], &pbPacket[1], TSPacketSize - 1);
+      memcpy(&pbPacket[TSPacketSize - 1], &nextSync, 1);   //  pbPacket[1] ... pbPacket[187]  nextSync
+      continue;
     }
   }
 
-  return true;
+  throw "Unexpected resync func error";
 }
+
 
 
 
@@ -151,8 +168,6 @@ extern void parse_PAT(BYTE *pbPacket, USHORT *PMTPid)
   }
 
   _tMyPrintf(_T("Set PMT_PID to %x\r\n"), *PMTPid);
-  _tMyPrintf(_T("Press any key to start\r\n"));
-
 }
 
 extern void parse_PMT(BYTE *pbPacket, USHORT *PCRPid, USHORT *CaptionPid)

@@ -1246,11 +1246,11 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
   //
   while (true){
 
-    size_t readNum;
+    size_t read;
     if (!afterResync)
     {
       //通常
-      readNum = fread(pbPacket, TSPacketSize, 1, app.fpInputTs);
+      read = fread(pbPacket, TSPacketSize, 1, app.fpInputTs);
     }
     else
     {
@@ -1258,15 +1258,15 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
       //同期バイト'G'は既に確認済み。残りの187byteを読み込む。
       //ストリーム位置を戻せないのでResync直後は処理を分ける。
       pbPacket[0] = 'G';
-      readNum = fread(&pbPacket[1], TSPacketSize - 1, 1, app.fpInputTs);
+      read = fread(&pbPacket[1], TSPacketSize - 1, 1, app.fpInputTs);
       afterResync = false;
     }
-    if (readNum == 0) break;           //EOF or close pipe
+    if (read == 0) break;           //EOF or close pipe
 
     //速度制限
     if (cp->Mode_PipeInput == false && 0 < limit_Bsec)
     {
-      tickReadSize += readNum * TSPacketSize;                                //単位時間の読込み量
+      tickReadSize += read * TSPacketSize;                                //単位時間の読込み量
       auto tickElapse = system_clock::now() - tickBeginTime;                 //経過時間
       auto elapse_ms = duration_cast<chrono::milliseconds>(tickElapse).count();
 
@@ -1316,18 +1316,16 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
     {
       if (!resync2(pbPacket, app.fpInputTs, TSPacketSize))
       {
+        _tMyPrintf(_T("\r\n"));
         _tMyPrintf(_T("Fail to resync.\r\n"));
-        _tMyPrintf(_T("Invalid TS File.\r\n"));
-        Sleep(2000);
         result = C2A_FAILURE;
+        Sleep(2000);
         goto EXIT;
       }
-
       //再同期後のパケットはpbPacketに読込み済、パースして続行
       afterResync = true;
       parse_Packet_Header(&packet, &pbPacket[0]);
     }
-
 
     if (packet.TsErr)
       continue;
@@ -1555,6 +1553,7 @@ int _tmain(int argc, _TCHAR *argv[])
   // Prepare the handlers.
   if (prepare_app_handler(app, argc, argv)) {
     result = C2A_ERR_MEMORY;
+    Sleep(2000);
     goto EXIT;
   }
   CCaption2AssParameter *param = static_cast<CCaption2AssParameter *>(app.GetParam(C2A_PARAM_ALL));
@@ -1562,7 +1561,7 @@ int _tmain(int argc, _TCHAR *argv[])
   // Parse arguments.
   if (ParseCmd(argc, argv, param)) {
     result = C2A_ERR_PARAM;
-    Sleep(2000);
+    Sleep(2000 * 3);
     goto EXIT;
   }
   pid_information_t *pi = static_cast<pid_information_t *>(app.GetParam(C2A_PARAM_PID));
@@ -1571,6 +1570,7 @@ int _tmain(int argc, _TCHAR *argv[])
 
   // Initialize Caption Utility.
   if (initialize_caption_dll(app, capUtil)) {
+    _tMyPrintf(_T("\r\n"));
     _tMyPrintf(_T("Load Caption.dll failed\r\n"));
     result = C2A_ERR_DLL;
     Sleep(2000);
@@ -1590,7 +1590,6 @@ int _tmain(int argc, _TCHAR *argv[])
   _tMyPrintf(_T("[Target] %s\r\n"), cp->TargetFileName);
   _tMyPrintf(_T("[Format] %s\r\n"), format_name[cp->format]);
 
-
   //Open File
   if (cp->Mode_PipeInput)
   {
@@ -1605,12 +1604,17 @@ int _tmain(int argc, _TCHAR *argv[])
     if (_tfopen_s(&(app.fpInputTs), cp->FileName, _T("rb"))
       || !(app.fpInputTs))
     {
+      _tMyPrintf(_T("\r\n"));
       _tMyPrintf(_T("Open TS File: %s failed\r\n"), cp->FileName);
       result = C2A_ERR_PARAM;
+      Sleep(2000);
       goto EXIT;
     }
-    /* FindStartOffsetをやめてmain loopのresync2で同期させる。*/
-    /* FindStartOffsetは２パケット or All */
+
+    /*
+      FindStartOffset()は先頭パケットだけの処理なので使用しない。
+      同期処理は main loopのresync2()でやり、ＴＳファイルの事前判断は行わない。
+    */
     // Check TS File.
     //if (!FindStartOffset(app.fpInputTs)) {
     //  _tMyPrintf(_T("Invalid TS File.\r\n"));
