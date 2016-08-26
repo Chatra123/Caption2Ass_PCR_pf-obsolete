@@ -51,6 +51,7 @@ static void usage(int argc)
   }
 }
 
+
 extern int ParseCmd(int argc, TCHAR **argv, CCaption2AssParameter *param)
 {
   if (argc < 2) {
@@ -68,6 +69,7 @@ extern int ParseCmd(int argc, TCHAR **argv, CCaption2AssParameter *param)
   cp->detectLength = 300 * 10000;      //about 3 - 5 min
   cp->Mode_PipeInput = false;
   cp->ReadSpeedLimit_MiBsec = 0;
+  cp->NonCaptionTag = false;
   _tcscpy_s(cp->ass_type, string_length, _T("Default"));
 
   // Parse args.
@@ -94,7 +96,6 @@ extern int ParseCmd(int argc, TCHAR **argv, CCaption2AssParameter *param)
       else
         goto ERROR_PARAM;
     }
-
     //==================================================
     else if (_tcsicmp(argv[i], _T("-p")) == 0){
       cp->Mode_PipeInput = true;
@@ -102,10 +103,12 @@ extern int ParseCmd(int argc, TCHAR **argv, CCaption2AssParameter *param)
     }
     else if (_tcsicmp(argv[i], _T("-pipe")) == 0){
       cp->Mode_PipeInput = true;
-      _tcscpy_s(cp->FileName, string_length, _T("pipe"));  //"pipe" is dummy filename
+      _tcscpy_s(cp->FileName, string_length, _T("pipe"));
     }
     else if (_tcsicmp(argv[i], _T("-limit")) == 0){
       i++;
+      if (i > argc)
+        goto ERROR_PARAM;
       if (_stscanf_s(argv[i], _T("%lf"), &(cp->ReadSpeedLimit_MiBsec)) <= 0)
         goto ERROR_PARAM;
     }
@@ -113,7 +116,6 @@ extern int ParseCmd(int argc, TCHAR **argv, CCaption2AssParameter *param)
       cp->NonCaptionTag = true;
     }
     //==================================================
-
     else if (_tcsicmp(argv[i], _T("-i")) == 0) {
       i++;
       if (i > argc)
