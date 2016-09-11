@@ -1020,8 +1020,9 @@ static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LI
         continue;
       }
 
-      //capListのサイズを確認するようにした。
-      //  空のcapListに反応して、cp->detectLengthの処理中断ができないことがあった。
+      //capList.size()を確認するようにした。
+      //　空のcapListに反応して、cp->detectLengthの処理中断ができず
+      //　空の字幕ファイルだけが残る。字幕が無いものとみなす。
       if (0 < capList.size())  app.bCreateOutput = TRUE;
 
 
@@ -1238,8 +1239,8 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
   const int TSPacketSize = 188;
   bool afterResync = false;                                          //Resyncの直後？  Resync時に同期バイト'G'は取得済み
   auto tickBeginTime = system_clock::now();                          //速度制限    計測開始時間
-  double tickReadSize = 0;                                           //速度制限    200ms間の読込み量
-  double limit_Bsec = cp->ReadSpeedLimit_MiBsec * 1024 * 1024;       //速度制限    最大読込み速度
+  double tickReadSize = 0;                                           //            200ms間の読込み量
+  double limit_Bsec = cp->ReadSpeedLimit_MiBsec * 1024 * 1024;       //            最大読込み速度
 
   //
   // Main loop
@@ -1266,7 +1267,7 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
     //速度制限
     if (cp->Mode_PipeInput == false && 0 < limit_Bsec)
     {
-      tickReadSize += read * TSPacketSize;                                //単位時間の読込み量
+      tickReadSize += read * TSPacketSize;                                   //200mx間の読込み量
       auto tickElapse = system_clock::now() - tickBeginTime;                 //経過時間
       auto elapse_ms = duration_cast<chrono::milliseconds>(tickElapse).count();
 
@@ -1610,18 +1611,6 @@ int _tmain(int argc, _TCHAR *argv[])
       Sleep(2000);
       goto EXIT;
     }
-
-    /*
-      FindStartOffset()は先頭パケットだけの処理なので使用しない。
-      同期処理は main loopのresync2()でやり、ＴＳファイルの事前判断は行わない。
-    */
-    // Check TS File.
-    //if (!FindStartOffset(app.fpInputTs)) {
-    //  _tMyPrintf(_T("Invalid TS File.\r\n"));
-    //  Sleep(2000);
-    //  result = C2A_FAILURE;
-    //  goto EXIT;
-    //}
   }
 
   // Open ASS/SRT/Log File.
