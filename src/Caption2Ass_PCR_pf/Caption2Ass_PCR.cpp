@@ -750,6 +750,13 @@ void CAssHandler::Dump(CAPTION_LIST& capList, DWORD endTime)
 
   if (capList.size() > 0)
     ++(this->index);
+
+  // flush at least every 6 sec
+  if (6 < time(NULL) - timeLastFlush)
+  {
+    fflush(fp);
+    timeLastFlush = time(NULL);
+  }
 }
 
 void CSrtHandler::Dump(CAPTION_LIST& capList, DWORD endTime)
@@ -836,15 +843,6 @@ do {                            \
       ORNAMENT_END();
     }
     fprintf(fp, "\r\n");
-
-
-    // flush at least every 6 sec
-    if (6 < time(NULL) - timeLastFlush)
-    {
-      fflush(fp);
-      timeLastFlush = time(NULL);
-    }
-
   }
 
   if (capList.size() > 0) {
@@ -852,6 +850,13 @@ do {                            \
       fprintf(fp, "\r\n");
     fprintf(fp, "\r\n");
     ++(this->index);
+  }
+
+  // flush at least every 6 sec
+  if (6 < time(NULL) - timeLastFlush)
+  {
+    fflush(fp);
+    timeLastFlush = time(NULL);
   }
 #undef ORNAMENT_START
 #undef ORNAMENT_END
