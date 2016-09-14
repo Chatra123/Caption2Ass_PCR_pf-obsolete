@@ -6,7 +6,6 @@
 #include <shlwapi.h>
 #include <vector>
 
-
 #include <io.h>
 #include <fcntl.h>
 #include <iostream>
@@ -14,7 +13,6 @@
 #include <chrono>
 #include <thread>
 using namespace std::chrono;
-using namespace std;
 
 
 #include "CommRoutine.h"
@@ -222,12 +220,12 @@ protected:
     if (this->fp) {
       fclose(this->fp);
       if (removed) {
-
         /*他のプロセスから読み込まれている間は削除できない。数回繰り返す。*/
         for (size_t i = 0; i < 3; i++)
         {
           Sleep(100);
-          if (remove(this->name) == 0) break;
+          if (remove(this->name) == 0) 
+            break;
         }
       }
       this->fp = NULL;
@@ -1028,8 +1026,8 @@ static int output_caption(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LI
       //capList.size()を確認するようにした。
       //　空のcapListに反応して、cp->detectLengthの処理中断ができず
       //　空の字幕ファイルだけが残る。字幕が無いものとみなす。
-      if (0 < capList.size())  app.bCreateOutput = TRUE;
-
+      if (0 < capList.size())
+        app.bCreateOutput = TRUE;
 
       DWORD endTime = (DWORD)((PTS + it->dwWaitTime) - app.startPCR);
       for (int i = 0; handle[i]; i++)
@@ -1247,11 +1245,8 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
   double tickReadSize = 0;                                           //            200ms間の読込み量
   double limit_Bsec = cp->ReadSpeedLimit_MiBsec * 1024 * 1024;       //            最大読込み速度
 
-  //
   // Main loop
-  //
   while (true){
-
     size_t read;
     if (!afterResync)
     {
@@ -1318,10 +1313,8 @@ static int main_loop(CAppHandler& app, CCaptionDllUtil& capUtil, CAPTION_LIST& c
     Packet_Header packet;
     parse_Packet_Header(&packet, &pbPacket[0]);
 
-    if (packet.Sync != 'G')
-    {
-      if (!resync2(pbPacket, app.fpInputTs, TSPacketSize))
-      {
+    if (packet.Sync != 'G'){
+      if (!resync2(pbPacket, app.fpInputTs, TSPacketSize)){
         _tMyPrintf(_T("\r\n"));
         _tMyPrintf(_T("Fail to resync.\r\n"));
         result = C2A_FAILURE;
@@ -1532,7 +1525,8 @@ void CreateNonCapTag(CAppHandler &app, TCHAR *targetName)
     _tcscat_s(tagPath, 1024, targetName);
     _tcscat_s(tagPath, 1024, _T(".noncap"));
     FILE *fp = _tfsopen(tagPath, _T("wb"), _SH_DENYWR); //共有設定  読込みを許可
-    fclose(fp);
+    if (fp)
+      fclose(fp);
   }
 }
 
