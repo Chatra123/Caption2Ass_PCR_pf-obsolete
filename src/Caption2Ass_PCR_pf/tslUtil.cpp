@@ -34,13 +34,13 @@ extern BOOL resync2(BYTE *pbPacket, FILE *fp, const int TSPacketSize)
     else
     {
       //found 'G'
-      intptr_t _1stPartSize = pSync - pbPacket;            //  pbPacket[0] ... ['G'-1]
-      intptr_t _2ndPartSize = TSPacketSize - _1stPartSize; //                           'G' ... pbPacket[187]
+      ptrdiff_t _1stPartSize = pSync - pbPacket;            //  pbPacket[0] ... ['G'-1]
+      ptrdiff_t _2ndPartSize = TSPacketSize - _1stPartSize; //                           'G' ... pbPacket[187]
 
       //_2ndPartÇêÊì™Ç…à⁄ìÆ
       memmove(pbPacket, pSync, _2ndPartSize);              //  'G' ... pbPacket[187]
 
-      int extra = TSPacketSize - _2ndPartSize;
+      size_t extra = TSPacketSize - _2ndPartSize;
       if (0 < extra)
       {                                                    //  'G' ... pbPacket[187]  extra
         size_t read = fread_s(&pbPacket[_2ndPartSize], extra, extra, 1, fp);
