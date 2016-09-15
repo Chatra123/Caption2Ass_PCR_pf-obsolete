@@ -1561,7 +1561,7 @@ int _tmain(int argc, _TCHAR *argv[])
   // Parse arguments.
   if (ParseCmd(argc, argv, param)) {
     result = C2A_ERR_PARAM;
-    Sleep(2000 * 3);
+    Sleep(2000);
     goto EXIT;
   }
   pid_information_t *pi = static_cast<pid_information_t *>(app.GetParam(C2A_PARAM_PID));
