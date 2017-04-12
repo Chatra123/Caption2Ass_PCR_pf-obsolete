@@ -1,22 +1,17 @@
 ﻿
-## Caption2Ass_PCR_pf
+## Caption2Ass_PCR
 
 ＴＳファイルから字幕を抽出します。
 
 
 ------------------------------------------------------------------
-### 使い方
-
-Run_Caption2Ass_PCR_pf.batのショートカットを作成し、TSファイルをドロップ
-
-
 ### 使い方　　コマンドライン
 
 ファイル  
-Caption2Ass_PCR_pf.exe  -i "C:\video.ts"  -format srt  
+Caption2Ass_PCR.exe  -i "C:\Video.ts"  -format srt  
 
 パイプ  
-Caption2Ass_PCR_pf.exe  -pipe  -o "C:\video.ts"  -format srt  
+Caption2Ass_PCR.exe  -pipe  -o "C:\Video.ts"  -format srt  
 
 
 
@@ -25,7 +20,7 @@ Caption2Ass_PCR_pf.exe  -pipe  -o "C:\video.ts"  -format srt
 
     -p
     -pipe
-パイプからデータを受けとる
+標準入力からデータを受けとる
 
 
     -limit 10.0
@@ -52,9 +47,9 @@ tsファイルに字幕が含まれてない場合に空のファイル .noncap�
 -detect_lengthの指定が無いときの初期値は300  
 
 
-その他の引数はソースコード内の   
-"Caption2Ass_PCR_pf\readme history\Caption2Ass_PCR.exe の Readme.txt"  
-に記載されています。
+その他の引数はソースコード内の  
+"Caption2Ass_PCR\bin\Caption2Ass_PCR.exe の Readme.txt"  
+に記載されています。  
 
 
 
